@@ -91,10 +91,7 @@ fn unique_filename(filename: &str, used: &mut std::collections::HashMap<String, 
         }
         Some(count) => {
             let path = std::path::Path::new(filename);
-            let stem = path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or("file");
+            let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
             let ext = path
                 .extension()
                 .and_then(|s| s.to_str())
@@ -123,18 +120,12 @@ mod tests {
         let conv_out = dir.path().join("conv");
         std::fs::create_dir_all(&conv_out).unwrap();
 
-        let img = image_converter::convert(
-            png.to_str().unwrap(),
-            "jpg",
-            conv_out.to_str().unwrap(),
-        )
-        .unwrap();
-        let aud = audio_converter::convert(
-            wav.to_str().unwrap(),
-            "mp3",
-            conv_out.to_str().unwrap(),
-        )
-        .unwrap();
+        let img =
+            image_converter::convert(png.to_str().unwrap(), "jpg", conv_out.to_str().unwrap())
+                .unwrap();
+        let aud =
+            audio_converter::convert(wav.to_str().unwrap(), "mp3", conv_out.to_str().unwrap())
+                .unwrap();
 
         let zip_dir = dir.path().join("zips");
         let result = build(

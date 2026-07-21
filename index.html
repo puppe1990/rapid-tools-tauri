@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="/src/styles.css" />
@@ -14,9 +14,11 @@
           <aside id="tool-sidebar" class="tool-sidebar">
             <div class="sidebar-inner">
               <div class="sidebar-brand">
-                <p class="sidebar-kicker" id="sidebar-kicker">Rapid Tools</p>
-                <h2 class="sidebar-title">Tools</h2>
-                <p class="sidebar-subtitle">
+                <p class="sidebar-kicker" id="sidebar-kicker" data-i18n="app.brand">
+                  Rapid Tools
+                </p>
+                <h2 class="sidebar-title" data-i18n="app.toolsHeading">Tools</h2>
+                <p class="sidebar-subtitle" data-i18n="app.toolsSubtitle">
                   Quick conversion for image, video and audio.
                 </p>
               </div>
@@ -39,12 +41,42 @@
                 <input
                   id="tool-search-input"
                   type="search"
+                  data-i18n-placeholder="app.searchPlaceholder"
                   placeholder="Search tools..."
                   autocomplete="off"
                 />
               </div>
 
-              <nav id="tool-nav" class="tool-nav" aria-label="Tools"></nav>
+              <nav
+                id="tool-nav"
+                class="tool-nav"
+                data-i18n-aria-label="app.searchAria"
+                aria-label="Tools"
+              ></nav>
+
+              <div class="locale-switch">
+                <button type="button" id="btn-locale" class="locale-btn">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="locale-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m5 8 6 6" />
+                    <path d="m4 14 6-6 2-3" />
+                    <path d="M2 5h12" />
+                    <path d="M7 2h1" />
+                    <path d="m22 22-5-10-5 10" />
+                    <path d="M14 18h6" />
+                  </svg>
+                  <span id="locale-btn-label">English</span>
+                </button>
+              </div>
             </div>
           </aside>
 
@@ -58,36 +90,62 @@
 
             <div id="converter-panel" class="converter-panel">
               <div class="upload-card" id="upload-card">
-                <div id="loading-overlay" class="loading-overlay hidden" aria-hidden="true">
+                <div
+                  id="loading-overlay"
+                  class="loading-overlay hidden"
+                  aria-hidden="true"
+                >
                   <div class="loading-pill">
                     <span class="spinner"></span>
                     <div>
-                      <p class="loading-title" id="loading-title">Working…</p>
-                      <p class="loading-sub">Isso pode levar alguns segundos.</p>
+                      <p
+                        class="loading-title"
+                        id="loading-title"
+                        data-i18n="common.working"
+                      >
+                        Working…
+                      </p>
+                      <p class="loading-sub" data-i18n="common.pleaseWait">
+                        This may take a few seconds.
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 <div id="drop-zone" class="drop-zone">
                   <div class="drop-zone-header">
-                    <label class="field-label" for="btn-pick">Arquivos de origem</label>
-                    <button type="button" id="btn-pick" class="file-pick-btn">
-                      Escolher arquivos…
+                    <label
+                      class="field-label"
+                      for="btn-pick"
+                      data-i18n="common.sourceFiles"
+                    >
+                      Source files
+                    </label>
+                    <button
+                      type="button"
+                      id="btn-pick"
+                      class="file-pick-btn"
+                      data-i18n="common.chooseFiles"
+                    >
+                      Choose files…
                     </button>
                     <p class="field-help" id="accept-help">
-                      Selecione um ou mais arquivos suportados.
+                      Select one or more supported files.
                     </p>
                   </div>
 
                   <div class="upload-list-wrap">
                     <div class="upload-summary-bar">
-                      <span id="file-summary">Nenhum arquivo selecionado</span>
+                      <span id="file-summary" data-i18n="common.noFiles"
+                        >No files selected</span
+                      >
                       <button
                         type="button"
                         id="btn-clear-files"
                         class="chip-btn hidden"
+                        data-i18n="common.clearUploads"
                       >
-                        Limpar uploads
+                        Clear uploads
                       </button>
                     </div>
                     <ul id="file-list" class="file-list"></ul>
@@ -96,11 +154,13 @@
 
                 <div class="options-grid" id="options-row">
                   <label id="format-label" class="field">
-                    <span class="field-label">Formato de destino</span>
+                    <span class="field-label" data-i18n="common.targetFormat"
+                      >Target format</span
+                    >
                     <select id="target-format" class="field-control"></select>
                   </label>
                   <label id="width-label" class="field hidden">
-                    <span class="field-label">Largura</span>
+                    <span class="field-label" data-i18n="common.width">Width</span>
                     <input
                       type="number"
                       id="width"
@@ -110,7 +170,7 @@
                     />
                   </label>
                   <label id="height-label" class="field hidden">
-                    <span class="field-label">Altura</span>
+                    <span class="field-label" data-i18n="common.height">Height</span>
                     <input
                       type="number"
                       id="height"
@@ -120,7 +180,7 @@
                     />
                   </label>
                   <label id="fit-label" class="field hidden">
-                    <span class="field-label">Encaixe</span>
+                    <span class="field-label" data-i18n="common.fit">Fit</span>
                     <select id="fit" class="field-control">
                       <option value="contain">contain</option>
                       <option value="cover">cover</option>
@@ -128,7 +188,7 @@
                     </select>
                   </label>
                   <label id="preset-label" class="field hidden">
-                    <span class="field-label">Preset</span>
+                    <span class="field-label" data-i18n="common.preset">Preset</span>
                     <select id="preset" class="field-control">
                       <option value="small">small</option>
                       <option value="balanced" selected>balanced</option>
@@ -136,7 +196,9 @@
                     </select>
                   </label>
                   <label id="resolution-label" class="field hidden">
-                    <span class="field-label">Resolução máx.</span>
+                    <span class="field-label" data-i18n="common.maxResolution"
+                      >Max resolution</span
+                    >
                     <select id="max-resolution" class="field-control">
                       <option value="original">original</option>
                       <option value="1080">1080</option>
@@ -145,7 +207,9 @@
                     </select>
                   </label>
                   <label id="interval-label" class="field hidden">
-                    <span class="field-label">Intervalo (s)</span>
+                    <span class="field-label" data-i18n="common.interval"
+                      >Interval (s)</span
+                    >
                     <input
                       type="number"
                       id="interval"
@@ -159,7 +223,7 @@
 
                 <button type="button" id="btn-run" class="run-btn" disabled>
                   <span class="run-spinner hidden" id="run-spinner"></span>
-                  <span id="run-label">Converter</span>
+                  <span id="run-label" data-i18n="common.convert">Convert</span>
                 </button>
                 <p id="status" class="status-line" role="status"></p>
               </div>
@@ -167,27 +231,56 @@
               <aside class="results-card" id="results-card">
                 <div id="results-filled" class="results-filled hidden">
                   <div class="results-top">
-                    <p class="results-kicker" id="results-kicker">Resultados</p>
-                    <button type="button" id="btn-clear-results" class="chip-btn chip-btn-dark">
-                      Limpar convertidas
+                    <p
+                      class="results-kicker"
+                      id="results-kicker"
+                      data-i18n="common.results"
+                    >
+                      Results
+                    </p>
+                    <button
+                      type="button"
+                      id="btn-clear-results"
+                      class="chip-btn chip-btn-dark"
+                      data-i18n="common.clearResults"
+                    >
+                      Clear converted
                     </button>
                   </div>
-                  <button type="button" id="btn-zip" class="zip-btn" disabled>
-                    Baixar pacote ZIP
+                  <button
+                    type="button"
+                    id="btn-zip"
+                    class="zip-btn"
+                    disabled
+                    data-i18n="common.downloadZip"
+                  >
+                    Download ZIP package
                   </button>
                   <ul id="results" class="results-list"></ul>
                 </div>
 
                 <div id="results-empty" class="results-empty">
                   <div class="results-info-block">
-                    <p class="results-kicker" id="empty-kicker">Lote pronto para exportar</p>
-                    <p class="results-info-text" id="empty-copy">
-                      Envie arquivos, escolha o formato final e baixe cada saída
-                      ou um ZIP com tudo junto.
+                    <p
+                      class="results-kicker"
+                      id="empty-kicker"
+                      data-i18n="common.batchReady"
+                    >
+                      Batch ready to export
+                    </p>
+                    <p
+                      class="results-info-text"
+                      id="empty-copy"
+                      data-i18n="common.batchReadyCopy"
+                    >
+                      Send files, pick the final format, and download each output or a ZIP
+                      with everything.
                     </p>
                   </div>
                   <div class="results-info-block">
-                    <p class="results-info-title">Saídas suportadas</p>
+                    <p class="results-info-title" data-i18n="common.supportedOutputs">
+                      Supported outputs
+                    </p>
                     <p class="results-info-text" id="formats-list"></p>
                   </div>
                 </div>

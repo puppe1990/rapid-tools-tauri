@@ -53,7 +53,11 @@ pub fn compress(
 
     run_command(&ffmpeg, &args)?;
 
-    if !output_path.is_file() || std::fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0) == 0
+    if !output_path.is_file()
+        || std::fs::metadata(&output_path)
+            .map(|m| m.len())
+            .unwrap_or(0)
+            == 0
     {
         return Err("compression_failed: empty or missing output".into());
     }
@@ -67,10 +71,25 @@ pub fn compress(
 
 fn preset_args(preset: &str) -> Vec<String> {
     match preset {
-        "small" => vec!["-preset".into(), "veryfast".into(), "-crf".into(), "34".into()],
-        "balanced" => vec!["-preset".into(), "medium".into(), "-crf".into(), "29".into()],
+        "small" => vec![
+            "-preset".into(),
+            "veryfast".into(),
+            "-crf".into(),
+            "34".into(),
+        ],
+        "balanced" => vec![
+            "-preset".into(),
+            "medium".into(),
+            "-crf".into(),
+            "29".into(),
+        ],
         "high" => vec!["-preset".into(), "slow".into(), "-crf".into(), "24".into()],
-        _ => vec!["-preset".into(), "medium".into(), "-crf".into(), "29".into()],
+        _ => vec![
+            "-preset".into(),
+            "medium".into(),
+            "-crf".into(),
+            "29".into(),
+        ],
     }
 }
 

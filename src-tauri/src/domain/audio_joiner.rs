@@ -1,6 +1,6 @@
 use super::util::{
-    audio_codec_args, ensure_output_dir, ensure_sources_exist, find_executable, media_type_for_audio,
-    normalize_format, run_command,
+    audio_codec_args, ensure_output_dir, ensure_sources_exist, find_executable,
+    media_type_for_audio, normalize_format, run_command,
 };
 use super::ConversionResult;
 
@@ -47,7 +47,11 @@ pub fn join(
 
     run_command(&ffmpeg, &args)?;
 
-    if !output_path.is_file() || std::fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0) == 0
+    if !output_path.is_file()
+        || std::fs::metadata(&output_path)
+            .map(|m| m.len())
+            .unwrap_or(0)
+            == 0
     {
         return Err("join_failed: empty or missing output".into());
     }

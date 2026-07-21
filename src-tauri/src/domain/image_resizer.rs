@@ -1,6 +1,6 @@
 use super::util::{
-    ensure_output_dir, ensure_source_exists, find_executable, media_type_for_image, normalize_format,
-    run_command,
+    ensure_output_dir, ensure_source_exists, find_executable, media_type_for_image,
+    normalize_format, run_command,
 };
 use super::ConversionResult;
 use std::path::PathBuf;
@@ -41,8 +41,8 @@ pub fn resize(
         actual_format
     ));
 
-    let magick = find_executable(&["magick", "convert"])
-        .map_err(|_| "imagemagick_not_found".to_string())?;
+    let magick =
+        find_executable(&["magick", "convert"]).map_err(|_| "imagemagick_not_found".to_string())?;
 
     let mut args = vec![source_path.to_string()];
     args.extend(resize_args(width, height, &fit));
@@ -50,7 +50,11 @@ pub fn resize(
 
     run_command(&magick, &args)?;
 
-    if !output_path.is_file() || std::fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0) == 0
+    if !output_path.is_file()
+        || std::fs::metadata(&output_path)
+            .map(|m| m.len())
+            .unwrap_or(0)
+            == 0
     {
         return Err("resize_failed: empty or missing output".into());
     }

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "rapid-tools-tauri",
+  "productName": "RapidTools",
   "version": "0.1.0",
   "identifier": "com.rapidtools.app",
   "build": {
@@ -13,9 +13,14 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "rapid-tools-tauri",
-        "width": 800,
-        "height": 600
+        "title": "RapidTools",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "maximized": true,
+        "resizable": true,
+        "fullscreen": false
       }
     ],
     "security": {

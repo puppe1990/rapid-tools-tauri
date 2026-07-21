@@ -8,16 +8,49 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test": "cargo test --manifest-path src-tauri/Cargo.toml --lib"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
+    "fmt:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml --all",
+    "fmt:rust:check": "cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check",
+    "clippy": "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run fmt:rust:check && npm run clippy && npm run test",
+    "precommit": "lint-staged && npm run typecheck && npm run fmt:rust:check && npm run clippy && npm run test",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,html,json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "src-tauri/**/*.rs": [
+      "rustfmt"
+    ]
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2.7.2",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-opener": "^2",
+    "i18next": "^26.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@tauri-apps/cli": "^2",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4",
     "typescript": "~5.6.2",
+    "typescript-eslint": "^8.53.1",
     "vite": "^6.0.3"
   }
 }
