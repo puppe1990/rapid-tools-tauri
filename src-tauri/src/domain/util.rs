@@ -220,11 +220,7 @@ pub mod test_fixtures {
         let path = dir.path().join(name);
         run_command(
             &qrencode,
-            &[
-                "-o".into(),
-                path.to_string_lossy().into(),
-                payload.into(),
-            ],
+            &["-o".into(), path.to_string_lossy().into(), payload.into()],
         )
         .expect("create qr png");
         assert!(path.is_file());

@@ -108,7 +108,11 @@ pub fn convert(
         )?;
     }
 
-    if !output_path.is_file() || std::fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0) == 0
+    if !output_path.is_file()
+        || std::fs::metadata(&output_path)
+            .map(|m| m.len())
+            .unwrap_or(0)
+            == 0
     {
         return Err("conversion_failed: empty or missing output".into());
     }

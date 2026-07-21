@@ -1,6 +1,6 @@
 use super::util::{
-    audio_codec_args, ensure_output_dir, ensure_source_exists, find_executable, media_type_for_audio,
-    normalize_format, output_path_for, run_command,
+    audio_codec_args, ensure_output_dir, ensure_source_exists, find_executable,
+    media_type_for_audio, normalize_format, output_path_for, run_command,
 };
 use super::ConversionResult;
 
@@ -20,12 +20,7 @@ pub fn convert(
     let output_path = output_path_for(source_path, &out_dir, &target_format);
     let ffmpeg = find_executable(&["ffmpeg"]).map_err(|_| "ffmpeg_not_found".to_string())?;
 
-    let mut args = vec![
-        "-y".into(),
-        "-i".into(),
-        source_path.into(),
-        "-vn".into(),
-    ];
+    let mut args = vec!["-y".into(), "-i".into(), source_path.into(), "-vn".into()];
     args.extend(audio_codec_args(&target_format)?);
     args.push(output_path.to_string_lossy().into_owned());
 
@@ -34,7 +29,11 @@ pub fn convert(
     if !output_path.is_file() {
         return Err("conversion_failed: output missing".into());
     }
-    if std::fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0) == 0 {
+    if std::fs::metadata(&output_path)
+        .map(|m| m.len())
+        .unwrap_or(0)
+        == 0
+    {
         return Err("conversion_failed: empty output".into());
     }
 
@@ -63,8 +62,8 @@ mod tests {
         let out = dir.path().join("out");
         std::fs::create_dir_all(&out).unwrap();
 
-        let result = convert(source.to_str().unwrap(), "mp3", out.to_str().unwrap())
-            .expect("audio convert");
+        let result =
+            convert(source.to_str().unwrap(), "mp3", out.to_str().unwrap()).expect("audio convert");
 
         assert!(std::path::Path::new(&result.output_path).is_file());
         assert!(std::fs::metadata(&result.output_path).unwrap().len() > 0);
@@ -79,8 +78,8 @@ mod tests {
         let source = make_wav(&dir, "tone.wav");
         let out = dir.path().join("out");
         std::fs::create_dir_all(&out).unwrap();
-        let result = convert(source.to_str().unwrap(), "flac", out.to_str().unwrap())
-            .expect("flac convert");
+        let result =
+            convert(source.to_str().unwrap(), "flac", out.to_str().unwrap()).expect("flac convert");
         assert!(result.output_path.ends_with(".flac"));
         assert!(std::fs::metadata(&result.output_path).unwrap().len() > 0);
     }
@@ -89,8 +88,12 @@ mod tests {
     fn rejects_unsupported_format() {
         let dir = TempDir::new().unwrap();
         let source = make_wav(&dir, "tone.wav");
-        let err = convert(source.to_str().unwrap(), "wma", dir.path().to_str().unwrap())
-            .unwrap_err();
+        let err = convert(
+            source.to_str().unwrap(),
+            "wma",
+            dir.path().to_str().unwrap(),
+        )
+        .unwrap_err();
         assert!(err.contains("unsupported_target_format"));
     }
 }

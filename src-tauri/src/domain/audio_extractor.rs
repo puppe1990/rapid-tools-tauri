@@ -1,6 +1,6 @@
 use super::util::{
-    audio_codec_args, ensure_output_dir, ensure_source_exists, find_executable, media_type_for_audio,
-    normalize_format, output_path_for, run_command,
+    audio_codec_args, ensure_output_dir, ensure_source_exists, find_executable,
+    media_type_for_audio, normalize_format, output_path_for, run_command,
 };
 use super::ConversionResult;
 use std::process::Command;
@@ -23,18 +23,17 @@ pub fn extract(
     let output_path = output_path_for(source_path, &out_dir, &target_format);
     let ffmpeg = find_executable(&["ffmpeg"]).map_err(|_| "ffmpeg_not_found".to_string())?;
 
-    let mut args = vec![
-        "-y".into(),
-        "-i".into(),
-        source_path.into(),
-        "-vn".into(),
-    ];
+    let mut args = vec!["-y".into(), "-i".into(), source_path.into(), "-vn".into()];
     args.extend(audio_codec_args(&target_format)?);
     args.push(output_path.to_string_lossy().into_owned());
 
     run_command(&ffmpeg, &args)?;
 
-    if !output_path.is_file() || std::fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0) == 0
+    if !output_path.is_file()
+        || std::fs::metadata(&output_path)
+            .map(|m| m.len())
+            .unwrap_or(0)
+            == 0
     {
         return Err("conversion_failed: empty or missing output".into());
     }
@@ -89,8 +88,8 @@ mod tests {
         let out = dir.path().join("out");
         std::fs::create_dir_all(&out).unwrap();
 
-        let result = extract(source.to_str().unwrap(), "mp3", out.to_str().unwrap())
-            .expect("extract audio");
+        let result =
+            extract(source.to_str().unwrap(), "mp3", out.to_str().unwrap()).expect("extract audio");
 
         assert!(std::path::Path::new(&result.output_path).is_file());
         assert!(std::fs::metadata(&result.output_path).unwrap().len() > 0);

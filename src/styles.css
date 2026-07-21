@@ -217,7 +217,11 @@ body {
 }
 
 .nav-card:hover {
-  border-color: color-mix(in srgb, var(--nav-accent, var(--accent)) 35%, var(--slate-200));
+  border-color: color-mix(
+    in srgb,
+    var(--nav-accent, var(--accent)) 35%,
+    var(--slate-200)
+  );
   background: color-mix(in srgb, var(--nav-accent, var(--accent)) 8%, white);
 }
 

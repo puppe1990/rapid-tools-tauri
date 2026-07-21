@@ -1,6 +1,6 @@
 use super::util::{
-    ensure_output_dir, ensure_sources_exist, find_executable, media_type_for_video, normalize_format,
-    run_command,
+    ensure_output_dir, ensure_sources_exist, find_executable, media_type_for_video,
+    normalize_format, run_command,
 };
 use super::ConversionResult;
 use std::path::PathBuf;
@@ -74,7 +74,10 @@ pub fn join(
     )?;
 
     if !temp_joined.is_file()
-        || std::fs::metadata(&temp_joined).map(|m| m.len()).unwrap_or(0) == 0
+        || std::fs::metadata(&temp_joined)
+            .map(|m| m.len())
+            .unwrap_or(0)
+            == 0
     {
         return Err("join_failed: empty or missing intermediate mp4".into());
     }

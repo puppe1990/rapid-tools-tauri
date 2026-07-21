@@ -1,6 +1,6 @@
 use super::util::{
-    ensure_output_dir, ensure_source_exists, find_executable, media_type_for_video, normalize_format,
-    output_path_for, run_command,
+    ensure_output_dir, ensure_source_exists, find_executable, media_type_for_video,
+    normalize_format, output_path_for, run_command,
 };
 use super::ConversionResult;
 use std::process::Command;
@@ -68,7 +68,11 @@ pub fn convert(
     if !output_path.is_file() {
         return Err("conversion_failed: output missing".into());
     }
-    if std::fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0) == 0 {
+    if std::fs::metadata(&output_path)
+        .map(|m| m.len())
+        .unwrap_or(0)
+        == 0
+    {
         return Err("conversion_failed: empty output".into());
     }
 
@@ -112,9 +116,9 @@ fn ensure_has_video_stream(source_path: &str) -> Result<(), String> {
 fn orientation_filter(orientation: &str, _source_path: &str) -> Option<String> {
     match orientation {
         "original" => None,
-        "square" => Some(
-            "crop=min(iw\\,ih):min(iw\\,ih):(iw-min(iw\\,ih))/2:(ih-min(iw\\,ih))/2".into(),
-        ),
+        "square" => {
+            Some("crop=min(iw\\,ih):min(iw\\,ih):(iw-min(iw\\,ih))/2:(ih-min(iw\\,ih))/2".into())
+        }
         // Keep simple: transpose for portrait/landscape when needed would need ffprobe dims;
         // original Phoenix probes dimensions. For parity tests we mainly use original.
         "landscape" | "portrait" => None,

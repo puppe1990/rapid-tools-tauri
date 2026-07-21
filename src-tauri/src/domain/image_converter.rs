@@ -1,6 +1,6 @@
 use super::util::{
-    ensure_output_dir, ensure_source_exists, find_executable, media_type_for_image, normalize_format,
-    output_path_for, run_command,
+    ensure_output_dir, ensure_source_exists, find_executable, media_type_for_image,
+    normalize_format, output_path_for, run_command,
 };
 use super::ConversionResult;
 
@@ -19,8 +19,8 @@ pub fn convert(
     let out_dir = ensure_output_dir(output_dir)?;
     let output_path = output_path_for(source_path, &out_dir, &target_format);
 
-    let magick = find_executable(&["magick", "convert"])
-        .map_err(|_| "imagemagick_not_found".to_string())?;
+    let magick =
+        find_executable(&["magick", "convert"]).map_err(|_| "imagemagick_not_found".to_string())?;
 
     let command_output = if target_format == "enc" {
         format!("EPS:{}", output_path.display())
@@ -71,12 +71,8 @@ mod tests {
         let out = dir.path().join("out");
         std::fs::create_dir_all(&out).unwrap();
 
-        let result = convert(
-            source.to_str().unwrap(),
-            "jpg",
-            out.to_str().unwrap(),
-        )
-        .expect("image convert should succeed");
+        let result = convert(source.to_str().unwrap(), "jpg", out.to_str().unwrap())
+            .expect("image convert should succeed");
 
         assert!(std::path::Path::new(&result.output_path).is_file());
         assert!(std::fs::metadata(&result.output_path).unwrap().len() > 0);
@@ -93,8 +89,8 @@ mod tests {
         let out = dir.path().join("out");
         std::fs::create_dir_all(&out).unwrap();
 
-        let result = convert(source.to_str().unwrap(), "webp", out.to_str().unwrap())
-            .expect("webp convert");
+        let result =
+            convert(source.to_str().unwrap(), "webp", out.to_str().unwrap()).expect("webp convert");
         assert!(result.output_path.ends_with(".webp"));
         assert!(std::fs::metadata(&result.output_path).unwrap().len() > 0);
     }
@@ -103,8 +99,12 @@ mod tests {
     fn rejects_unsupported_format() {
         let dir = TempDir::new().unwrap();
         let source = make_png(&dir, "sample.png");
-        let err = convert(source.to_str().unwrap(), "bmp", dir.path().to_str().unwrap())
-            .unwrap_err();
+        let err = convert(
+            source.to_str().unwrap(),
+            "bmp",
+            dir.path().to_str().unwrap(),
+        )
+        .unwrap_err();
         assert!(err.contains("unsupported_target_format"));
     }
 

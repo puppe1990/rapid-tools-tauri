@@ -14,14 +14,18 @@ pub fn images_to_pdf(
     ensure_sources_exist(source_paths)?;
     let out_dir = ensure_output_dir(output_dir)?;
     let output_path = out_dir.join("photos.pdf");
-    let magick = find_executable(&["magick", "convert"])
-        .map_err(|_| "imagemagick_not_found".to_string())?;
+    let magick =
+        find_executable(&["magick", "convert"]).map_err(|_| "imagemagick_not_found".to_string())?;
 
     let mut args: Vec<String> = source_paths.to_vec();
     args.push(output_path.to_string_lossy().into_owned());
     run_command(&magick, &args)?;
 
-    if !output_path.is_file() || std::fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0) == 0
+    if !output_path.is_file()
+        || std::fs::metadata(&output_path)
+            .map(|m| m.len())
+            .unwrap_or(0)
+            == 0
     {
         return Err("conversion_failed: empty or missing pdf".into());
     }
@@ -44,8 +48,8 @@ pub fn pdf_to_images(
     }
     ensure_source_exists(source_path)?;
     let out_dir = ensure_output_dir(output_dir)?;
-    let magick = find_executable(&["magick", "convert"])
-        .map_err(|_| "imagemagick_not_found".to_string())?;
+    let magick =
+        find_executable(&["magick", "convert"]).map_err(|_| "imagemagick_not_found".to_string())?;
 
     let stem = std::path::Path::new(source_path)
         .file_stem()

@@ -6,21 +6,21 @@ UI layout and tool colors follow the RapidTools Phoenix LiveView product screens
 
 ## Features (product parity)
 
-| Tool | Formats / notes |
-|------|-----------------|
-| Image converter | png, jpg, webp, heic, avif, enc |
-| Image resizer | original / jpg / png / webp · contain/cover/stretch |
-| Video converter | mp4, mov, webm, mkv, avi |
-| Video compressor | mp4 · presets small/balanced/high |
-| Extract audio | mp3, wav, ogg, aac, flac |
-| Audio converter | mp3, wav, ogg, aac, flac |
-| Photos to PDF | images → pdf |
-| PDF to images | pdf → png/jpg pages |
-| Together audios | join ≥2 audio files |
-| Together videos | join ≥2 videos |
-| Images to video | mp4 / gif |
-| QR reader | decode with `zbarimg` |
-| ZIP batch | pack conversion results |
+| Tool             | Formats / notes                                     |
+| ---------------- | --------------------------------------------------- |
+| Image converter  | png, jpg, webp, heic, avif, enc                     |
+| Image resizer    | original / jpg / png / webp · contain/cover/stretch |
+| Video converter  | mp4, mov, webm, mkv, avi                            |
+| Video compressor | mp4 · presets small/balanced/high                   |
+| Extract audio    | mp3, wav, ogg, aac, flac                            |
+| Audio converter  | mp3, wav, ogg, aac, flac                            |
+| Photos to PDF    | images → pdf                                        |
+| PDF to images    | pdf → png/jpg pages                                 |
+| Together audios  | join ≥2 audio files                                 |
+| Together videos  | join ≥2 videos                                      |
+| Images to video  | mp4 / gif                                           |
+| QR reader        | decode with `zbarimg`                               |
+| ZIP batch        | pack conversion results                             |
 
 ### Explicit deferrals
 
@@ -42,37 +42,43 @@ cd rapid-tools-tauri
 npm install
 ```
 
+Husky installs a **pre-commit** hook that runs lint-staged (ESLint + Prettier + `rustfmt`), TypeScript, Clippy, and domain tests.
+
 ## Run the app
 
 ```bash
 npm run tauri dev
 ```
 
-Or:
+## Quality checks
 
-```bash
-cd src-tauri && cargo build
-# then from repo root:
-npm run tauri dev
-```
+| Command                               | What it does                                                   |
+| ------------------------------------- | -------------------------------------------------------------- |
+| `npm run lint`                        | ESLint (TS)                                                    |
+| `npm run format` / `format:check`     | Prettier write / check                                         |
+| `npm run typecheck`                   | `tsc --noEmit`                                                 |
+| `npm run test`                        | Rust domain tests (`cargo test --lib`)                         |
+| `npm run clippy`                      | Clippy with `-D warnings`                                      |
+| `npm run fmt:rust` / `fmt:rust:check` | `rustfmt`                                                      |
+| `npm run check`                       | All of the above (CI-equivalent locally)                       |
+| `npm run precommit`                   | Hook entry: lint-staged + typecheck + rustfmt + clippy + tests |
 
-## Tests (TDD / domain)
+### Tests (TDD / domain)
 
 Conversion logic lives under `src-tauri/src/domain/` and is covered by unit tests that create **real** media fixtures (via `magick`/`ffmpeg`/`qrencode`) and assert real output files.
 
 ```bash
-cd src-tauri
-cargo test
+npm run test
+# or focused:
+cd src-tauri && cargo test image_converter
 ```
 
-Focused examples:
+### CI
 
-```bash
-cargo test image_converter
-cargo test video_converter
-cargo test audio_converter
-cargo test zip_archive
-```
+GitHub Actions (`.github/workflows/ci.yml`) runs on every PR and push to `main`:
+
+1. **Frontend** — Prettier, ESLint, TypeScript
+2. **Rust** — `rustfmt`, Clippy, `cargo test --lib` (with ffmpeg, ImageMagick, zbar, qrencode)
 
 ## Architecture
 

@@ -89,8 +89,7 @@ const TOOLS: ToolDef[] = [
     accent: "#06b6d4",
     runLabel: "Redimensionar imagens",
     loadingTitle: "Redimensionando imagens",
-    emptyCopy:
-      "Defina largura, altura e encaixe; baixe cada resultado ou o pacote ZIP.",
+    emptyCopy: "Defina largura, altura e encaixe; baixe cada resultado ou o pacote ZIP.",
   },
   {
     id: "video_compressor",
@@ -112,8 +111,7 @@ const TOOLS: ToolDef[] = [
     id: "extract_audio",
     name: "Extract Audio from Video",
     blurb: "Pull MP3, WAV, OGG, AAC and FLAC from video",
-    description:
-      "Extraia a faixa de áudio de vídeos para MP3, WAV, OGG, AAC ou FLAC.",
+    description: "Extraia a faixa de áudio de vídeos para MP3, WAV, OGG, AAC ou FLAC.",
     hint: "Rápido para podcasts, samples e legendagem offline.",
     badge: "Extract workflow",
     acceptHelp: "Entradas aceitas: MP4, MOV, WEBM, MKV, AVI e TS.",
@@ -435,12 +433,8 @@ function updateRunEnabled() {
     currentTool.id === "images_to_video" ||
     currentTool.id === "photos_to_pdf";
   const min =
-    currentTool.id === "together_audios" || currentTool.id === "together_videos"
-      ? 2
-      : 1;
-  const ok = multiJoin
-    ? selectedPaths.length >= min
-    : selectedPaths.length >= 1;
+    currentTool.id === "together_audios" || currentTool.id === "together_videos" ? 2 : 1;
+  const ok = multiJoin ? selectedPaths.length >= min : selectedPaths.length >= 1;
   btn.disabled = !ok;
 }
 

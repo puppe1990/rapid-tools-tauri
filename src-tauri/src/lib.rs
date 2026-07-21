@@ -50,12 +50,7 @@ fn convert_video(
     orientation: Option<String>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("video"));
-    domain::video_converter::convert(
-        &source_path,
-        &target_format,
-        &out,
-        orientation.as_deref(),
-    )
+    domain::video_converter::convert(&source_path, &target_format, &out, orientation.as_deref())
 }
 
 #[tauri::command]
