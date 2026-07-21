@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RapidTools</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+  <body>
+    <section id="app-section" class="app-section theme-image">
+      <div class="app-frame">
+        <div class="app-grid">
+          <aside id="tool-sidebar" class="tool-sidebar">
+            <div class="sidebar-inner">
+              <div class="sidebar-brand">
+                <p class="sidebar-kicker" id="sidebar-kicker">Rapid Tools</p>
+                <h2 class="sidebar-title">Tools</h2>
+                <p class="sidebar-subtitle">
+                  Quick conversion for image, video and audio.
+                </p>
+              </div>
+
+              <div class="tool-search">
+                <svg
+                  class="tool-search-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input
+                  id="tool-search-input"
+                  type="search"
+                  placeholder="Search tools..."
+                  autocomplete="off"
+                />
+              </div>
+
+              <nav id="tool-nav" class="tool-nav" aria-label="Tools"></nav>
+            </div>
+          </aside>
+
+          <div class="main-scroll">
+            <header class="hero">
+              <span class="hero-badge" id="tool-badge">Image workflow</span>
+              <h1 id="tool-title">Image Converter</h1>
+              <p class="hero-desc" id="tool-description"></p>
+              <p class="hero-hint" id="tool-hint"></p>
+            </header>
+
+            <div id="converter-panel" class="converter-panel">
+              <div class="upload-card" id="upload-card">
+                <div id="loading-overlay" class="loading-overlay hidden" aria-hidden="true">
+                  <div class="loading-pill">
+                    <span class="spinner"></span>
+                    <div>
+                      <p class="loading-title" id="loading-title">Working…</p>
+                      <p class="loading-sub">Isso pode levar alguns segundos.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="drop-zone" class="drop-zone">
+                  <div class="drop-zone-header">
+                    <label class="field-label" for="btn-pick">Arquivos de origem</label>
+                    <button type="button" id="btn-pick" class="file-pick-btn">
+                      Escolher arquivos…
+                    </button>
+                    <p class="field-help" id="accept-help">
+                      Selecione um ou mais arquivos suportados.
+                    </p>
+                  </div>
+
+                  <div class="upload-list-wrap">
+                    <div class="upload-summary-bar">
+                      <span id="file-summary">Nenhum arquivo selecionado</span>
+                      <button
+                        type="button"
+                        id="btn-clear-files"
+                        class="chip-btn hidden"
+                      >
+                        Limpar uploads
+                      </button>
+                    </div>
+                    <ul id="file-list" class="file-list"></ul>
+                  </div>
+                </div>
+
+                <div class="options-grid" id="options-row">
+                  <label id="format-label" class="field">
+                    <span class="field-label">Formato de destino</span>
+                    <select id="target-format" class="field-control"></select>
+                  </label>
+                  <label id="width-label" class="field hidden">
+                    <span class="field-label">Largura</span>
+                    <input
+                      type="number"
+                      id="width"
+                      class="field-control"
+                      value="1280"
+                      min="1"
+                    />
+                  </label>
+                  <label id="height-label" class="field hidden">
+                    <span class="field-label">Altura</span>
+                    <input
+                      type="number"
+                      id="height"
+                      class="field-control"
+                      value="720"
+                      min="1"
+                    />
+                  </label>
+                  <label id="fit-label" class="field hidden">
+                    <span class="field-label">Encaixe</span>
+                    <select id="fit" class="field-control">
+                      <option value="contain">contain</option>
+                      <option value="cover">cover</option>
+                      <option value="stretch">stretch</option>
+                    </select>
+                  </label>
+                  <label id="preset-label" class="field hidden">
+                    <span class="field-label">Preset</span>
+                    <select id="preset" class="field-control">
+                      <option value="small">small</option>
+                      <option value="balanced" selected>balanced</option>
+                      <option value="high">high</option>
+                    </select>
+                  </label>
+                  <label id="resolution-label" class="field hidden">
+                    <span class="field-label">Resolução máx.</span>
+                    <select id="max-resolution" class="field-control">
+                      <option value="original">original</option>
+                      <option value="1080">1080</option>
+                      <option value="720">720</option>
+                      <option value="480">480</option>
+                    </select>
+                  </label>
+                  <label id="interval-label" class="field hidden">
+                    <span class="field-label">Intervalo (s)</span>
+                    <input
+                      type="number"
+                      id="interval"
+                      class="field-control"
+                      value="2"
+                      min="0.1"
+                      step="0.1"
+                    />
+                  </label>
+                </div>
+
+                <button type="button" id="btn-run" class="run-btn" disabled>
+                  <span class="run-spinner hidden" id="run-spinner"></span>
+                  <span id="run-label">Converter</span>
+                </button>
+                <p id="status" class="status-line" role="status"></p>
+              </div>
+
+              <aside class="results-card" id="results-card">
+                <div id="results-filled" class="results-filled hidden">
+                  <div class="results-top">
+                    <p class="results-kicker" id="results-kicker">Resultados</p>
+                    <button type="button" id="btn-clear-results" class="chip-btn chip-btn-dark">
+                      Limpar convertidas
+                    </button>
+                  </div>
+                  <button type="button" id="btn-zip" class="zip-btn" disabled>
+                    Baixar pacote ZIP
+                  </button>
+                  <ul id="results" class="results-list"></ul>
+                </div>
+
+                <div id="results-empty" class="results-empty">
+                  <div class="results-info-block">
+                    <p class="results-kicker" id="empty-kicker">Lote pronto para exportar</p>
+                    <p class="results-info-text" id="empty-copy">
+                      Envie arquivos, escolha o formato final e baixe cada saída
+                      ou um ZIP com tudo junto.
+                    </p>
+                  </div>
+                  <div class="results-info-block">
+                    <p class="results-info-title">Saídas suportadas</p>
+                    <p class="results-info-text" id="formats-list"></p>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
