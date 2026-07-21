@@ -53,30 +53,6 @@
                 data-i18n-aria-label="app.searchAria"
                 aria-label="Tools"
               ></nav>
-
-              <div class="locale-switch">
-                <button type="button" id="btn-locale" class="locale-btn">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="locale-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="m5 8 6 6" />
-                    <path d="m4 14 6-6 2-3" />
-                    <path d="M2 5h12" />
-                    <path d="M7 2h1" />
-                    <path d="m22 22-5-10-5 10" />
-                    <path d="M14 18h6" />
-                  </svg>
-                  <span id="locale-btn-label">English</span>
-                </button>
-              </div>
             </div>
           </aside>
 
@@ -112,13 +88,32 @@
                   </div>
                 </div>
 
-                <div id="drop-zone" class="drop-zone">
-                  <div class="drop-zone-header">
-                    <label
-                      class="field-label"
-                      for="btn-pick"
-                      data-i18n="common.sourceFiles"
+                <div id="drop-zone" class="drop-zone" role="button" tabindex="0">
+                  <div class="drop-zone-visual" aria-hidden="true">
+                    <svg
+                      class="drop-zone-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.75"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                     >
+                      <path d="M12 16V4" />
+                      <path d="m8 8 4-4 4 4" />
+                      <path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
+                    </svg>
+                    <p class="drop-zone-title" id="drop-hint" data-i18n="common.dropHint">
+                      Drag and drop files here
+                    </p>
+                    <p class="drop-zone-or" data-i18n="common.dropOrBrowse">
+                      or click to browse
+                    </p>
+                  </div>
+
+                  <div class="drop-zone-header">
+                    <label class="field-label" data-i18n="common.sourceFiles">
                       Source files
                     </label>
                     <button
@@ -148,17 +143,46 @@
                         Clear uploads
                       </button>
                     </div>
+                    <div id="file-search-wrap" class="file-search-wrap hidden">
+                      <svg
+                        class="file-search-icon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.3-4.3" />
+                      </svg>
+                      <input
+                        id="file-search-input"
+                        type="search"
+                        class="file-search-input"
+                        data-i18n-placeholder="common.searchFiles"
+                        placeholder="Search selected files…"
+                        autocomplete="off"
+                      />
+                    </div>
                     <ul id="file-list" class="file-list"></ul>
+                    <p id="file-search-empty" class="file-search-empty hidden"></p>
                   </div>
                 </div>
 
                 <div class="options-grid" id="options-row">
-                  <label id="format-label" class="field">
+                  <div id="format-label" class="field">
                     <span class="field-label" data-i18n="common.targetFormat"
                       >Target format</span
                     >
-                    <select id="target-format" class="field-control"></select>
-                  </label>
+                    <div
+                      id="target-format"
+                      class="search-select"
+                      data-select-id="target-format"
+                    ></div>
+                  </div>
                   <label id="width-label" class="field hidden">
                     <span class="field-label" data-i18n="common.width">Width</span>
                     <input
@@ -179,33 +203,24 @@
                       min="1"
                     />
                   </label>
-                  <label id="fit-label" class="field hidden">
+                  <div id="fit-label" class="field hidden">
                     <span class="field-label" data-i18n="common.fit">Fit</span>
-                    <select id="fit" class="field-control">
-                      <option value="contain">contain</option>
-                      <option value="cover">cover</option>
-                      <option value="stretch">stretch</option>
-                    </select>
-                  </label>
-                  <label id="preset-label" class="field hidden">
+                    <div id="fit" class="search-select" data-select-id="fit"></div>
+                  </div>
+                  <div id="preset-label" class="field hidden">
                     <span class="field-label" data-i18n="common.preset">Preset</span>
-                    <select id="preset" class="field-control">
-                      <option value="small">small</option>
-                      <option value="balanced" selected>balanced</option>
-                      <option value="high">high</option>
-                    </select>
-                  </label>
-                  <label id="resolution-label" class="field hidden">
+                    <div id="preset" class="search-select" data-select-id="preset"></div>
+                  </div>
+                  <div id="resolution-label" class="field hidden">
                     <span class="field-label" data-i18n="common.maxResolution"
                       >Max resolution</span
                     >
-                    <select id="max-resolution" class="field-control">
-                      <option value="original">original</option>
-                      <option value="1080">1080</option>
-                      <option value="720">720</option>
-                      <option value="480">480</option>
-                    </select>
-                  </label>
+                    <div
+                      id="max-resolution"
+                      class="search-select"
+                      data-select-id="max-resolution"
+                    ></div>
+                  </div>
                   <label id="interval-label" class="field hidden">
                     <span class="field-label" data-i18n="common.interval"
                       >Interval (s)</span
@@ -288,6 +303,30 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="locale-fab">
+        <button type="button" id="btn-locale" class="locale-btn">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="locale-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m5 8 6 6" />
+            <path d="m4 14 6-6 2-3" />
+            <path d="M2 5h12" />
+            <path d="M7 2h1" />
+            <path d="m22 22-5-10-5 10" />
+            <path d="M14 18h6" />
+          </svg>
+          <span id="locale-btn-label">English</span>
+        </button>
       </div>
     </section>
   </body>

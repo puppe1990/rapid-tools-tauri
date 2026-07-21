@@ -4,6 +4,10 @@ Desktop batch media tools built with **Tauri 2** (Rust domain + web UI). Convers
 
 UI layout and tool colors follow the RapidTools Phoenix LiveView product screens.
 
+## Preview
+
+![RapidTools Tauri screenshot](docs/rapid-tools-tauri-screenshot.png)
+
 ## Features (product parity)
 
 | Tool             | Formats / notes                                     |
