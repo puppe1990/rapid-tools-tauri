@@ -132,6 +132,164 @@ let selectedPaths: string[] = [];
 let results: ConversionResult[] = [];
 let qrText: string | null = null;
 let searchQuery = "";
+let fileSearchQuery = "";
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+/** Searchable single-select used for multi-option fields (format, fit, preset, …). */
+class SearchSelect {
+  readonly root: HTMLElement;
+  private options: SelectOption[] = [];
+  private value = "";
+  private open = false;
+  private filter = "";
+  private readonly trigger: HTMLButtonElement;
+  private readonly panel: HTMLElement;
+  private readonly searchInput: HTMLInputElement;
+  private readonly list: HTMLElement;
+  private readonly empty: HTMLElement;
+
+  constructor(root: HTMLElement) {
+    this.root = root;
+    root.classList.add("search-select");
+    root.innerHTML = `
+      <button type="button" class="search-select-trigger" aria-haspopup="listbox" aria-expanded="false">
+        <span class="search-select-value"></span>
+        <svg class="search-select-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+      <div class="search-select-panel hidden" role="listbox">
+        <div class="search-select-search">
+          <input type="search" class="search-select-input" autocomplete="off" />
+        </div>
+        <div class="search-select-options"></div>
+        <p class="search-select-empty hidden"></p>
+      </div>
+    `;
+    this.trigger = root.querySelector(".search-select-trigger") as HTMLButtonElement;
+    this.panel = root.querySelector(".search-select-panel") as HTMLElement;
+    this.searchInput = root.querySelector(".search-select-input") as HTMLInputElement;
+    this.list = root.querySelector(".search-select-options") as HTMLElement;
+    this.empty = root.querySelector(".search-select-empty") as HTMLElement;
+
+    this.trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.setOpen(!this.open);
+    });
+    this.searchInput.addEventListener("click", (e) => e.stopPropagation());
+    this.searchInput.addEventListener("input", () => {
+      this.filter = this.searchInput.value;
+      this.renderOptions();
+    });
+    this.searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        this.setOpen(false);
+        this.trigger.focus();
+      }
+    });
+  }
+
+  setOptions(options: SelectOption[], preferred?: string): void {
+    this.options = options;
+    const keep =
+      preferred && options.some((o) => o.value === preferred)
+        ? preferred
+        : options.some((o) => o.value === this.value)
+          ? this.value
+          : (options[0]?.value ?? "");
+    this.value = keep;
+    this.filter = "";
+    this.searchInput.value = "";
+    this.renderTrigger();
+    this.renderOptions();
+  }
+
+  getValue(): string {
+    return this.value;
+  }
+
+  private setOpen(open: boolean): void {
+    this.open = open;
+    this.panel.classList.toggle("hidden", !open);
+    this.trigger.setAttribute("aria-expanded", open ? "true" : "false");
+    this.root.classList.toggle("is-open", open);
+    if (open) {
+      this.filter = "";
+      this.searchInput.value = "";
+      this.searchInput.placeholder = t("common.searchOptions");
+      this.renderOptions();
+      requestAnimationFrame(() => this.searchInput.focus());
+    }
+  }
+
+  close(): void {
+    this.setOpen(false);
+  }
+
+  private renderTrigger(): void {
+    const label =
+      this.options.find((o) => o.value === this.value)?.label ?? this.value ?? "—";
+    const valueEl = this.trigger.querySelector(".search-select-value");
+    if (valueEl) valueEl.textContent = label;
+  }
+
+  private renderOptions(): void {
+    const q = this.filter.trim().toLowerCase();
+    const filtered = q
+      ? this.options.filter(
+          (o) => o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
+        )
+      : this.options;
+
+    this.list.innerHTML = "";
+    this.empty.classList.toggle("hidden", filtered.length > 0);
+    this.empty.textContent = t("common.noMatchingOptions");
+
+    for (const opt of filtered) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `search-select-option${opt.value === this.value ? " is-selected" : ""}`;
+      btn.setAttribute("role", "option");
+      btn.setAttribute("aria-selected", opt.value === this.value ? "true" : "false");
+      btn.textContent = opt.label;
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.value = opt.value;
+        this.renderTrigger();
+        this.setOpen(false);
+      });
+      this.list.appendChild(btn);
+    }
+  }
+}
+
+const selectControllers = new Map<string, SearchSelect>();
+
+function getSearchSelect(id: string): SearchSelect {
+  let ctrl = selectControllers.get(id);
+  if (!ctrl) {
+    const root = $(id);
+    ctrl = new SearchSelect(root);
+    selectControllers.set(id, ctrl);
+  }
+  return ctrl;
+}
+
+function selectValue(id: string): string {
+  return selectControllers.get(id)?.getValue() ?? "";
+}
+
+function closeAllSearchSelects(except?: HTMLElement): void {
+  for (const ctrl of selectControllers.values()) {
+    if (except && ctrl.root === except) continue;
+    ctrl.close();
+  }
+}
 
 function $(id: string): HTMLElement {
   const el = document.getElementById(id);
@@ -224,6 +382,8 @@ function selectTool(id: ToolId) {
   selectedPaths = [];
   results = [];
   qrText = null;
+  fileSearchQuery = "";
+  closeAllSearchSelects();
   applyTheme();
   renderNav();
   renderToolHeader();
@@ -252,14 +412,23 @@ function renderToolHeader() {
 }
 
 function renderOptions() {
-  const formatSelect = $("target-format") as HTMLSelectElement;
-  formatSelect.innerHTML = "";
-  for (const f of currentTool.formats) {
-    const opt = document.createElement("option");
-    opt.value = f;
-    opt.textContent = f.toUpperCase();
-    formatSelect.appendChild(opt);
-  }
+  const formatCtrl = getSearchSelect("target-format");
+  formatCtrl.setOptions(
+    currentTool.formats.map((f) => ({ value: f, label: f.toUpperCase() })),
+  );
+
+  getSearchSelect("fit").setOptions(
+    ["contain", "cover", "stretch"].map((v) => ({ value: v, label: v })),
+    "contain",
+  );
+  getSearchSelect("preset").setOptions(
+    ["small", "balanced", "high"].map((v) => ({ value: v, label: v })),
+    "balanced",
+  );
+  getSearchSelect("max-resolution").setOptions(
+    ["original", "1080", "720", "480"].map((v) => ({ value: v, label: v })),
+    "original",
+  );
 
   const show = (id: string, on: boolean) => {
     $(id).classList.toggle("hidden", !on);
@@ -276,14 +445,34 @@ function renderOptions() {
 
 function renderFiles() {
   const n = selectedPaths.length;
-  $("file-summary").textContent = n
-    ? t("common.filesSelected", { count: n })
-    : t("common.noFiles");
+  const q = fileSearchQuery.trim().toLowerCase();
+  const indexed = selectedPaths.map((path, index) => ({ path, index }));
+  const visible = q
+    ? indexed.filter(({ path }) => basename(path).toLowerCase().includes(q))
+    : indexed;
+
+  if (n === 0) {
+    $("file-summary").textContent = t("common.noFiles");
+  } else if (q && visible.length !== n) {
+    $("file-summary").textContent = t("common.filesVisible", {
+      visible: visible.length,
+      total: n,
+    });
+  } else {
+    $("file-summary").textContent = t("common.filesSelected", { count: n });
+  }
+
   $("btn-clear-files").classList.toggle("hidden", n === 0);
+  $("file-search-wrap").classList.toggle("hidden", n < 2);
+  const searchInput = $("file-search-input") as HTMLInputElement;
+  searchInput.placeholder = t("common.searchFiles");
+  if (searchInput.value !== fileSearchQuery) {
+    searchInput.value = fileSearchQuery;
+  }
 
   const list = $("file-list");
   list.innerHTML = "";
-  selectedPaths.forEach((path, index) => {
+  for (const { path, index } of visible) {
     const li = document.createElement("li");
     li.innerHTML = `
       <span class="file-name" title="${escapeHtml(path)}">${escapeHtml(basename(path))}</span>
@@ -294,14 +483,20 @@ function renderFiles() {
     remove.className = "file-remove";
     remove.setAttribute("aria-label", t("common.removeFile", { name: basename(path) }));
     remove.textContent = "X";
-    remove.addEventListener("click", () => {
+    remove.addEventListener("click", (e) => {
+      e.stopPropagation();
       selectedPaths = selectedPaths.filter((_, i) => i !== index);
       renderFiles();
       updateRunEnabled();
     });
     li.appendChild(remove);
     list.appendChild(li);
-  });
+  }
+
+  const empty = $("file-search-empty");
+  const showEmpty = n > 0 && visible.length === 0;
+  empty.classList.toggle("hidden", !showEmpty);
+  empty.textContent = showEmpty ? t("common.noMatchingFiles") : "";
 }
 
 function renderResults() {
@@ -412,11 +607,61 @@ async function switchLocale(): Promise<void> {
   refreshAllUi();
 }
 
-async function pickFiles() {
-  const multiple =
+function allowsMultipleFiles(): boolean {
+  return (
     currentTool.multi &&
     currentTool.id !== "pdf_to_images" &&
-    currentTool.id !== "qr_reader";
+    currentTool.id !== "qr_reader"
+  );
+}
+
+/** Merge dropped/picked paths into selection (append for multi tools). */
+function addPaths(paths: string[], opts: { replace?: boolean } = {}): void {
+  const cleaned = paths
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0 && !p.endsWith("/") && !p.endsWith("\\"));
+
+  if (!cleaned.length) return;
+
+  const replace = opts.replace === true || !allowsMultipleFiles();
+  let next: string[];
+
+  if (replace) {
+    next = allowsMultipleFiles() ? cleaned : [cleaned[0]];
+  } else {
+    const seen = new Set(selectedPaths);
+    next = [...selectedPaths];
+    for (const path of cleaned) {
+      if (!seen.has(path)) {
+        seen.add(path);
+        next.push(path);
+      }
+    }
+  }
+
+  const added = replace ? next.length : next.length - selectedPaths.length;
+
+  selectedPaths = next;
+  renderFiles();
+  updateRunEnabled();
+  if (added > 0) {
+    setStatus(t("common.filesAdded", { count: added }));
+  } else {
+    setStatus("");
+  }
+}
+
+function setDropActive(active: boolean): void {
+  const zone = $("drop-zone");
+  zone.classList.toggle("drag-active", active);
+  const hint = document.getElementById("drop-hint");
+  if (hint) {
+    hint.textContent = t(active ? "common.dropActive" : "common.dropHint");
+  }
+}
+
+async function pickFiles() {
+  const multiple = allowsMultipleFiles();
 
   const selected = await open({
     multiple,
@@ -424,10 +669,98 @@ async function pickFiles() {
   });
 
   if (selected === null) return;
-  selectedPaths = Array.isArray(selected) ? selected : [selected];
-  renderFiles();
-  updateRunEnabled();
-  setStatus("");
+  const paths = Array.isArray(selected) ? selected : [selected];
+  // Dialog selection replaces for clarity; drop appends for multi tools.
+  addPaths(paths, { replace: true });
+}
+
+/**
+ * Native Tauri drag-and-drop gives real filesystem paths (HTML5 File API does not).
+ * Also keep lightweight HTML5 handlers so the drop zone still highlights in browser preview.
+ */
+async function setupDragAndDrop(): Promise<void> {
+  const zone = $("drop-zone");
+
+  // Keyboard / click on the zone opens the file dialog (except interactive controls).
+  zone.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        "button, a, input, select, label, .file-remove, .search-select, .file-search-wrap",
+      )
+    ) {
+      return;
+    }
+    void pickFiles();
+  });
+  zone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      void pickFiles();
+    }
+  });
+
+  // Prevent the browser from navigating away when files are dropped on the page.
+  const preventNav = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  window.addEventListener("dragover", preventNav);
+  window.addEventListener("drop", preventNav);
+
+  // HTML5 highlight fallback (paths often useless in Tauri webview without native event).
+  zone.addEventListener("dragenter", (e) => {
+    e.preventDefault();
+    setDropActive(true);
+  });
+  zone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    setDropActive(true);
+  });
+  zone.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    // Only clear when leaving the zone itself, not children.
+    if (e.relatedTarget instanceof Node && zone.contains(e.relatedTarget)) return;
+    setDropActive(false);
+  });
+  zone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    setDropActive(false);
+    // Prefer Tauri native paths; HTML5 File.path is non-standard and often empty.
+    const files = e.dataTransfer?.files;
+    if (!files?.length) return;
+    const paths: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i] as File & { path?: string };
+      if (file.path) paths.push(file.path);
+    }
+    if (paths.length) addPaths(paths);
+  });
+
+  try {
+    const win = getCurrentWindow();
+    await win.onDragDropEvent((event) => {
+      const payload = event.payload;
+      switch (payload.type) {
+        case "enter":
+        case "over":
+          setDropActive(true);
+          break;
+        case "leave":
+          setDropActive(false);
+          break;
+        case "drop":
+          setDropActive(false);
+          if (payload.paths?.length) {
+            addPaths(payload.paths);
+          }
+          break;
+      }
+    });
+  } catch {
+    // Non-Tauri environment — HTML5 handlers above still work for highlighting.
+  }
 }
 
 async function runTool() {
@@ -435,7 +768,7 @@ async function runTool() {
   setStatus(t("common.processing"));
   results = [];
   qrText = null;
-  const format = ($("target-format") as HTMLSelectElement).value;
+  const format = selectValue("target-format");
 
   try {
     switch (currentTool.id) {
@@ -453,7 +786,7 @@ async function runTool() {
       case "image_resizer": {
         const width = Number(($("width") as HTMLInputElement).value);
         const height = Number(($("height") as HTMLInputElement).value);
-        const fit = ($("fit") as HTMLSelectElement).value;
+        const fit = selectValue("fit") || "contain";
         for (const path of selectedPaths) {
           results.push(
             await invoke<ConversionResult>("resize_image", {
@@ -480,8 +813,8 @@ async function runTool() {
         break;
       }
       case "video_compressor": {
-        const preset = ($("preset") as HTMLSelectElement).value;
-        const maxResolution = ($("max-resolution") as HTMLSelectElement).value;
+        const preset = selectValue("preset") || "balanced";
+        const maxResolution = selectValue("max-resolution") || "original";
         for (const path of selectedPaths) {
           results.push(
             await invoke<ConversionResult>("compress_video", {
@@ -605,8 +938,10 @@ window.addEventListener("DOMContentLoaded", () => {
     await initI18n();
     refreshAllUi();
     void ensureMaximizedOnLaunch();
+    await setupDragAndDrop();
 
-    $("btn-pick").addEventListener("click", () => {
+    $("btn-pick").addEventListener("click", (e) => {
+      e.stopPropagation();
       void pickFiles();
     });
     $("btn-run").addEventListener("click", () => {
@@ -615,8 +950,10 @@ window.addEventListener("DOMContentLoaded", () => {
     $("btn-zip").addEventListener("click", () => {
       void zipResults();
     });
-    $("btn-clear-files").addEventListener("click", () => {
+    $("btn-clear-files").addEventListener("click", (e) => {
+      e.stopPropagation();
       selectedPaths = [];
+      fileSearchQuery = "";
       renderFiles();
       updateRunEnabled();
       setStatus("");
@@ -631,8 +968,16 @@ window.addEventListener("DOMContentLoaded", () => {
       searchQuery = (e.target as HTMLInputElement).value;
       renderNav();
     });
+    $("file-search-input").addEventListener("click", (e) => e.stopPropagation());
+    $("file-search-input").addEventListener("keydown", (e) => e.stopPropagation());
+    $("file-search-input").addEventListener("input", (e) => {
+      e.stopPropagation();
+      fileSearchQuery = (e.target as HTMLInputElement).value;
+      renderFiles();
+    });
     $("btn-locale").addEventListener("click", () => {
       void switchLocale();
     });
+    document.addEventListener("click", () => closeAllSearchSelects());
   })();
 });
