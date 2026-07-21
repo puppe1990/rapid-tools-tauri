@@ -1,5 +1,26 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
+import {
+  currentLocale,
+  initI18n,
+  setLocale,
+  t,
+  toggleLocale,
+  type AppLocale,
+} from "./i18n";
+
+/** Maximize the desktop window once the UI is ready (backup for config/setup). */
+async function ensureMaximizedOnLaunch(): Promise<void> {
+  try {
+    const win = getCurrentWindow();
+    if (!(await win.isMaximized())) {
+      await win.maximize();
+    }
+  } catch {
+    // Browser preview / non-Tauri shell — ignore.
+  }
+}
 
 type ToolId =
   | "image"
@@ -17,19 +38,10 @@ type ToolId =
 
 interface ToolDef {
   id: ToolId;
-  name: string;
-  blurb: string;
-  description: string;
-  hint: string;
-  badge: string;
-  acceptHelp: string;
   formats: string[];
   multi: boolean;
   /** CSS color for nav dot / card accent (matches Phoenix ToolNavigation) */
   accent: string;
-  runLabel: string;
-  loadingTitle: string;
-  emptyCopy: string;
 }
 
 interface ConversionResult {
@@ -39,195 +51,79 @@ interface ConversionResult {
   target_format: string;
 }
 
-/** Tool metadata aligned with Phoenix ToolNavigation + LiveView copy. */
+/** Tool registry — copy comes from i18n keys tools.<id>.* */
 const TOOLS: ToolDef[] = [
   {
     id: "image",
-    name: "Image Converter",
-    blurb: "Batch image conversion",
-    description:
-      "Converta imagens para PNG, JPG, WEBP, HEIC, AVIF e ENC com downloads individuais ou em lote.",
-    hint: "Ideal para exportar assets para web, social, aplicativos e bibliotecas de design.",
-    badge: "Image workflow",
-    acceptHelp: "Entradas aceitas: JPG, JPEG, PNG, WEBP, HEIC, AVIF e ENC.",
     formats: ["png", "jpg", "webp", "heic", "avif", "enc"],
     multi: true,
     accent: "#f97316",
-    runLabel: "Converter imagens",
-    loadingTitle: "Convertendo imagens",
-    emptyCopy:
-      "Envie várias imagens, escolha o formato final e baixe cada arquivo convertido ou um ZIP com tudo junto.",
   },
   {
     id: "video",
-    name: "Video Converter",
-    blurb: "Convert MP4, MOV, WEBM, MKV and AVI",
-    description:
-      "Converta vídeos entre MP4, MOV, WEBM, MKV e AVI com downloads individuais ou em lote.",
-    hint: "Útil para padronizar formatos de edição, web e compartilhamento.",
-    badge: "Video workflow",
-    acceptHelp: "Entradas aceitas: MP4, MOV, WEBM, MKV e AVI.",
     formats: ["mp4", "mov", "webm", "mkv", "avi"],
     multi: true,
     accent: "#6366f1",
-    runLabel: "Converter vídeos",
-    loadingTitle: "Convertendo vídeos",
-    emptyCopy:
-      "Envie vários vídeos, escolha o container final e baixe cada saída ou um ZIP com o lote.",
   },
   {
     id: "image_resizer",
-    name: "Image Resizer",
-    blurb: "Resize for social, stores and thumbnails",
-    description:
-      "Redimensione imagens com encaixe contain, cover ou stretch e exporte no formato desejado.",
-    hint: "Presets mentais para social, lojas e thumbnails.",
-    badge: "Resize workflow",
-    acceptHelp: "Entradas aceitas: JPG, JPEG, PNG e WEBP.",
     formats: ["original", "jpg", "png", "webp"],
     multi: true,
     accent: "#06b6d4",
-    runLabel: "Redimensionar imagens",
-    loadingTitle: "Redimensionando imagens",
-    emptyCopy: "Defina largura, altura e encaixe; baixe cada resultado ou o pacote ZIP.",
   },
   {
     id: "video_compressor",
-    name: "Video Compressor",
-    blurb: "Reduce file size for sharing and upload",
-    description:
-      "Comprima vídeos para MP4 com presets de qualidade e limite de resolução.",
-    hint: "Ideal para reduzir peso antes de enviar ou publicar.",
-    badge: "Compress workflow",
-    acceptHelp: "Entradas aceitas: MP4, MOV, WEBM, MKV e AVI.",
     formats: ["mp4"],
     multi: true,
     accent: "#f43f5e",
-    runLabel: "Comprimir vídeos",
-    loadingTitle: "Comprimindo vídeos",
-    emptyCopy: "Escolha preset e resolução; baixe o MP4 comprimido ou o ZIP do lote.",
   },
   {
     id: "extract_audio",
-    name: "Extract Audio from Video",
-    blurb: "Pull MP3, WAV, OGG, AAC and FLAC from video",
-    description: "Extraia a faixa de áudio de vídeos para MP3, WAV, OGG, AAC ou FLAC.",
-    hint: "Rápido para podcasts, samples e legendagem offline.",
-    badge: "Extract workflow",
-    acceptHelp: "Entradas aceitas: MP4, MOV, WEBM, MKV, AVI e TS.",
     formats: ["mp3", "wav", "ogg", "aac", "flac"],
     multi: true,
     accent: "#d946ef",
-    runLabel: "Extrair áudio",
-    loadingTitle: "Extraindo áudio",
-    emptyCopy: "Envie vídeos e baixe cada áudio extraído ou o ZIP do lote.",
   },
   {
     id: "audio",
-    name: "Audio Converter",
-    blurb: "Convert MP3, WAV, OGG, AAC and FLAC",
-    description:
-      "Converta áudios entre MP3, WAV, OGG, AAC e FLAC com downloads individuais ou em lote.",
-    hint: "Padronize bibliotecas de som e assets de produto.",
-    badge: "Audio workflow",
-    acceptHelp: "Entradas aceitas: MP3, WAV, OGG, AAC e FLAC.",
     formats: ["mp3", "wav", "ogg", "aac", "flac"],
     multi: true,
     accent: "#10b981",
-    runLabel: "Converter áudios",
-    loadingTitle: "Convertendo áudios",
-    emptyCopy:
-      "Envie vários áudios, escolha o formato final e baixe cada arquivo ou o ZIP.",
   },
   {
     id: "photos_to_pdf",
-    name: "Photos to PDF",
-    blurb: "Reorder images and export a single PDF",
-    description: "Combine fotos em um único PDF para compartilhar ou imprimir.",
-    hint: "Útil para relatórios, portfólios e documentos simples.",
-    badge: "PDF workflow",
-    acceptHelp: "Entradas aceitas: JPG, PNG, WEBP, HEIC, AVIF e ENC.",
     formats: ["pdf"],
     multi: true,
     accent: "#0ea5e9",
-    runLabel: "Gerar PDF",
-    loadingTitle: "Gerando PDF",
-    emptyCopy: "Selecione as imagens na ordem desejada e exporte o PDF.",
   },
   {
     id: "pdf_to_images",
-    name: "PDF to images",
-    blurb: "Rasterize PDF pages to PNG or JPG",
-    description: "Converta páginas de PDF em imagens PNG ou JPG.",
-    hint: "Parte do fluxo de documentos do RapidTools.",
-    badge: "Document workflow",
-    acceptHelp: "Entrada aceita: PDF.",
     formats: ["png", "jpg"],
     multi: false,
     accent: "#8b5cf6",
-    runLabel: "Converter PDF",
-    loadingTitle: "Convertendo PDF",
-    emptyCopy: "Envie um PDF e baixe cada página rasterizada ou o ZIP.",
   },
   {
     id: "together_audios",
-    name: "Together Audios",
-    blurb: "Join multiple audio files into one track",
-    description: "Una dois ou mais áudios em um único arquivo de saída.",
-    hint: "Referência de layout mais rico do produto Phoenix.",
-    badge: "Join audio",
-    acceptHelp: "Selecione pelo menos 2 áudios (MP3, WAV, OGG, AAC, FLAC).",
     formats: ["mp3", "wav", "ogg", "aac", "flac"],
     multi: true,
     accent: "#f59e0b",
-    runLabel: "Juntar áudios",
-    loadingTitle: "Juntando áudios",
-    emptyCopy: "Escolha o formato final e baixe a faixa unificada.",
   },
   {
     id: "together_videos",
-    name: "Together Videos",
-    blurb: "Join multiple video files into one track",
-    description: "Una dois ou mais vídeos em um único arquivo de saída.",
-    hint: "Concatenação local via ffmpeg.",
-    badge: "Join video",
-    acceptHelp: "Selecione pelo menos 2 vídeos (MP4, MOV, WEBM, MKV, AVI).",
     formats: ["mp4", "mov", "webm", "mkv", "avi"],
     multi: true,
     accent: "#ec4899",
-    runLabel: "Juntar vídeos",
-    loadingTitle: "Juntando vídeos",
-    emptyCopy: "Escolha o container final e baixe o vídeo unificado.",
   },
   {
     id: "images_to_video",
-    name: "Images to Video",
-    blurb: "Turn photos into MP4 or GIF",
-    description: "Transforme uma sequência de imagens em MP4 ou GIF animado.",
-    hint: "Configure o intervalo entre frames.",
-    badge: "Slideshow workflow",
-    acceptHelp: "Entradas aceitas: PNG, JPG, JPEG e WEBP.",
     formats: ["mp4", "gif"],
     multi: true,
     accent: "#14b8a6",
-    runLabel: "Criar vídeo",
-    loadingTitle: "Criando vídeo",
-    emptyCopy: "Envie as imagens na ordem e exporte MP4 ou GIF.",
   },
   {
     id: "qr_reader",
-    name: "QR Reader",
-    blurb: "Decode QR codes from images or camera",
-    description: "Decodifique QR codes a partir de arquivos de imagem com zbarimg.",
-    hint: "No desktop, use upload de imagem (câmera do browser fica no app web).",
-    badge: "QR workflow",
-    acceptHelp: "Entradas aceitas: JPG, JPEG, PNG e WEBP.",
     formats: ["text"],
     multi: false,
     accent: "#84cc16",
-    runLabel: "Ler QR",
-    loadingTitle: "Lendo QR",
-    emptyCopy: "Envie uma imagem com QR para ver o payload decodificado.",
   },
 ];
 
@@ -255,6 +151,40 @@ function basename(path: string): string {
   return path.split(/[/\\]/).pop() ?? path;
 }
 
+function toolKey(id: ToolId, field: string): string {
+  return `tools.${id}.${field}`;
+}
+
+function toolText(id: ToolId, field: string): string {
+  return t(toolKey(id, field));
+}
+
+/** Apply data-i18n / data-i18n-placeholder / data-i18n-aria-label attributes. */
+function applyStaticI18n(): void {
+  document.querySelectorAll<HTMLElement>("[data-i18n]").forEach((el) => {
+    const key = el.dataset.i18n;
+    if (key) el.textContent = t(key);
+  });
+  document.querySelectorAll<HTMLInputElement>("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.dataset.i18nPlaceholder;
+    if (key) el.placeholder = t(key);
+  });
+  document.querySelectorAll<HTMLElement>("[data-i18n-aria-label]").forEach((el) => {
+    const key = el.dataset.i18nAriaLabel;
+    if (key) el.setAttribute("aria-label", t(key));
+  });
+  document.title = t("app.title");
+  updateLocaleButton();
+}
+
+function updateLocaleButton(): void {
+  const next = toggleLocale(currentLocale());
+  const nextName = next === "en" ? t("app.english") : t("app.portuguese");
+  $("locale-btn-label").textContent = nextName;
+  $("btn-locale").setAttribute("title", t("app.switchTo", { name: nextName }));
+  $("btn-locale").setAttribute("aria-label", t("app.switchTo", { name: nextName }));
+}
+
 function applyTheme() {
   const section = $("app-section");
   section.className = `app-section theme-${currentTool.id}`;
@@ -267,7 +197,9 @@ function renderNav() {
   const q = searchQuery.trim().toLowerCase();
 
   for (const tool of TOOLS) {
-    const hay = `${tool.name} ${tool.blurb}`.toLowerCase();
+    const name = toolText(tool.id, "name");
+    const blurb = toolText(tool.id, "blurb");
+    const hay = `${name} ${blurb}`.toLowerCase();
     if (q && !hay.includes(q)) continue;
 
     const btn = document.createElement("button");
@@ -278,9 +210,9 @@ function renderNav() {
     btn.innerHTML = `
       <div class="nav-card-row">
         <span class="nav-dot"></span>
-        <p class="nav-name">${escapeHtml(tool.name)}</p>
+        <p class="nav-name">${escapeHtml(name)}</p>
       </div>
-      <p class="nav-blurb">${escapeHtml(tool.blurb)}</p>
+      <p class="nav-blurb">${escapeHtml(blurb)}</p>
     `;
     btn.addEventListener("click", () => selectTool(tool.id));
     nav.appendChild(btn);
@@ -288,7 +220,7 @@ function renderNav() {
 }
 
 function selectTool(id: ToolId) {
-  currentTool = TOOLS.find((t) => t.id === id) ?? TOOLS[0];
+  currentTool = TOOLS.find((tool) => tool.id === id) ?? TOOLS[0];
   selectedPaths = [];
   results = [];
   qrText = null;
@@ -304,17 +236,19 @@ function selectTool(id: ToolId) {
 }
 
 function renderToolHeader() {
-  $("tool-badge").textContent = currentTool.badge;
-  $("tool-title").textContent = currentTool.name;
-  $("tool-description").textContent = currentTool.description;
-  $("tool-hint").textContent = currentTool.hint;
-  $("accept-help").textContent = currentTool.acceptHelp;
+  const id = currentTool.id;
+  $("tool-badge").textContent = toolText(id, "badge");
+  $("tool-title").textContent = toolText(id, "name");
+  $("tool-description").textContent = toolText(id, "description");
+  $("tool-hint").textContent = toolText(id, "hint");
+  $("accept-help").textContent = toolText(id, "acceptHelp");
   $("formats-list").textContent = currentTool.formats
     .map((f) => f.toUpperCase())
     .join(", ");
-  $("empty-copy").textContent = currentTool.emptyCopy;
-  $("run-label").textContent = currentTool.runLabel;
-  $("loading-title").textContent = currentTool.loadingTitle;
+  // empty-copy uses tool-specific text when empty results shown
+  $("empty-copy").textContent = toolText(id, "emptyCopy");
+  $("run-label").textContent = toolText(id, "runLabel");
+  $("loading-title").textContent = toolText(id, "loadingTitle");
 }
 
 function renderOptions() {
@@ -343,8 +277,8 @@ function renderOptions() {
 function renderFiles() {
   const n = selectedPaths.length;
   $("file-summary").textContent = n
-    ? `${n} arquivo(s) selecionado(s)`
-    : "Nenhum arquivo selecionado";
+    ? t("common.filesSelected", { count: n })
+    : t("common.noFiles");
   $("btn-clear-files").classList.toggle("hidden", n === 0);
 
   const list = $("file-list");
@@ -353,12 +287,12 @@ function renderFiles() {
     const li = document.createElement("li");
     li.innerHTML = `
       <span class="file-name" title="${escapeHtml(path)}">${escapeHtml(basename(path))}</span>
-      <span class="file-meta">pronto</span>
+      <span class="file-meta">${escapeHtml(t("common.ready"))}</span>
     `;
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "file-remove";
-    remove.setAttribute("aria-label", `Remover ${basename(path)}`);
+    remove.setAttribute("aria-label", t("common.removeFile", { name: basename(path) }));
     remove.textContent = "X";
     remove.addEventListener("click", () => {
       selectedPaths = selectedPaths.filter((_, i) => i !== index);
@@ -379,11 +313,11 @@ function renderResults() {
   if (qrText !== null) {
     empty.classList.add("hidden");
     filled.classList.remove("hidden");
-    $("results-kicker").textContent = "QR decodificado";
+    $("results-kicker").textContent = t("common.qrDecoded");
     ($("btn-zip") as HTMLButtonElement).disabled = true;
     const li = document.createElement("li");
     li.innerHTML = `
-      <strong>Payload</strong>
+      <strong>${escapeHtml(t("common.payload"))}</strong>
       <span class="path">${escapeHtml(qrText)}</span>
     `;
     list.appendChild(li);
@@ -393,26 +327,32 @@ function renderResults() {
   if (!results.length) {
     filled.classList.add("hidden");
     empty.classList.remove("hidden");
+    $("empty-kicker").textContent = t("common.batchReady");
+    $("empty-copy").textContent = toolText(currentTool.id, "emptyCopy");
     ($("btn-zip") as HTMLButtonElement).disabled = true;
     return;
   }
 
   empty.classList.add("hidden");
   filled.classList.remove("hidden");
-  $("results-kicker").textContent = `${results.length} arquivo(s) convertido(s)`;
+  $("results-kicker").textContent = t("common.convertedCount", {
+    count: results.length,
+  });
   ($("btn-zip") as HTMLButtonElement).disabled = false;
 
   for (const r of results) {
     const li = document.createElement("li");
     li.innerHTML = `
       <strong>${escapeHtml(r.filename)}</strong>
-      <span class="result-meta">Saída em ${escapeHtml(r.target_format.toUpperCase())}</span>
+      <span class="result-meta">${escapeHtml(
+        t("common.outputIn", { format: r.target_format.toUpperCase() }),
+      )}</span>
       <span class="path">${escapeHtml(r.output_path)}</span>
     `;
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "reveal-btn";
-    btn.textContent = "Revelar no Finder";
+    btn.textContent = t("common.reveal");
     btn.addEventListener("click", async () => {
       try {
         await invoke("reveal_path", { path: r.output_path });
@@ -455,6 +395,23 @@ function setLoading(on: boolean) {
   }
 }
 
+function refreshAllUi(): void {
+  applyStaticI18n();
+  applyTheme();
+  renderNav();
+  renderToolHeader();
+  renderOptions();
+  renderFiles();
+  renderResults();
+  updateRunEnabled();
+}
+
+async function switchLocale(): Promise<void> {
+  const next = toggleLocale(currentLocale()) as AppLocale;
+  await setLocale(next);
+  refreshAllUi();
+}
+
 async function pickFiles() {
   const multiple =
     currentTool.multi &&
@@ -475,7 +432,7 @@ async function pickFiles() {
 
 async function runTool() {
   setLoading(true);
-  setStatus("Processando…");
+  setStatus(t("common.processing"));
   results = [];
   qrText = null;
   const format = ($("target-format") as HTMLSelectElement).value;
@@ -613,8 +570,8 @@ async function runTool() {
     }
     setStatus(
       qrText !== null
-        ? "QR decodificado."
-        : `Pronto — ${results.length} arquivo(s) de saída.`,
+        ? t("common.qrDecodedStatus")
+        : t("common.doneCount", { count: results.length }),
     );
     renderResults();
   } catch (e) {
@@ -627,7 +584,7 @@ async function runTool() {
 
 async function zipResults() {
   if (!results.length) return;
-  setStatus("Gerando ZIP…");
+  setStatus(t("common.buildingZip"));
   try {
     const zip = await invoke<{ path: string; filename: string }>("build_zip", {
       id: `${Date.now()}`,
@@ -636,7 +593,7 @@ async function zipResults() {
         filename: r.filename,
       })),
     });
-    setStatus(`ZIP pronto: ${zip.path}`);
+    setStatus(t("common.zipReady", { path: zip.path }));
     await invoke("reveal_path", { path: zip.path });
   } catch (e) {
     setStatus(String(e), true);
@@ -644,37 +601,38 @@ async function zipResults() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  applyTheme();
-  renderNav();
-  renderToolHeader();
-  renderOptions();
-  renderFiles();
-  renderResults();
-  updateRunEnabled();
+  void (async () => {
+    await initI18n();
+    refreshAllUi();
+    void ensureMaximizedOnLaunch();
 
-  $("btn-pick").addEventListener("click", () => {
-    void pickFiles();
-  });
-  $("btn-run").addEventListener("click", () => {
-    void runTool();
-  });
-  $("btn-zip").addEventListener("click", () => {
-    void zipResults();
-  });
-  $("btn-clear-files").addEventListener("click", () => {
-    selectedPaths = [];
-    renderFiles();
-    updateRunEnabled();
-    setStatus("");
-  });
-  $("btn-clear-results").addEventListener("click", () => {
-    results = [];
-    qrText = null;
-    renderResults();
-    setStatus("");
-  });
-  $("tool-search-input").addEventListener("input", (e) => {
-    searchQuery = (e.target as HTMLInputElement).value;
-    renderNav();
-  });
+    $("btn-pick").addEventListener("click", () => {
+      void pickFiles();
+    });
+    $("btn-run").addEventListener("click", () => {
+      void runTool();
+    });
+    $("btn-zip").addEventListener("click", () => {
+      void zipResults();
+    });
+    $("btn-clear-files").addEventListener("click", () => {
+      selectedPaths = [];
+      renderFiles();
+      updateRunEnabled();
+      setStatus("");
+    });
+    $("btn-clear-results").addEventListener("click", () => {
+      results = [];
+      qrText = null;
+      renderResults();
+      setStatus("");
+    });
+    $("tool-search-input").addEventListener("input", (e) => {
+      searchQuery = (e.target as HTMLInputElement).value;
+      renderNav();
+    });
+    $("btn-locale").addEventListener("click", () => {
+      void switchLocale();
+    });
+  })();
 });

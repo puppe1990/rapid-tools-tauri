@@ -232,6 +232,29 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            // Open maximized by default. Config `maximized: true` is unreliable on some platforms
+            // (notably macOS), so we also force it here after the window exists.
+            use tauri::Manager;
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                // Prefer native maximize; if it no-ops, fall back to filling the monitor work area.
+                if window.maximize().is_err() || !window.is_maximized().unwrap_or(false) {
+                    if let Ok(Some(monitor)) = window.current_monitor() {
+                        let area = monitor.work_area();
+                        let _ = window.set_position(tauri::PhysicalPosition::new(
+                            area.position.x,
+                            area.position.y,
+                        ));
+                        let _ = window
+                            .set_size(tauri::PhysicalSize::new(area.size.width, area.size.height));
+                    }
+                    let _ = window.maximize();
+                }
+                let _ = window.set_focus();
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             list_tools,
             convert_image,

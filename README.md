@@ -35,6 +35,16 @@ UI layout and tool colors follow the RapidTools Phoenix LiveView product screens
 - `zbarimg` (QR reader)
 - `qrencode` (only for generating QR test fixtures)
 
+## App icon
+
+Master artwork: `app-icon.png` (1024×1024). Platform packs live under `src-tauri/icons/` (icns, ico, png sizes, iOS/Android).
+
+Regenerate after editing the master:
+
+```bash
+npx tauri icon app-icon.png -o src-tauri/icons
+```
+
 ## Setup
 
 ```bash
@@ -80,11 +90,25 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every PR and push to `main`:
 1. **Frontend** — Prettier, ESLint, TypeScript
 2. **Rust** — `rustfmt`, Clippy, `cargo test --lib` (with ffmpeg, ImageMagick, zbar, qrencode)
 
+## Internationalization (i18n)
+
+Frontend uses **i18next** with the same locales as the Phoenix app:
+
+| Locale         | File                          |
+| -------------- | ----------------------------- |
+| `en` (default) | `src/i18n/locales/en.json`    |
+| `pt-BR`        | `src/i18n/locales/pt-BR.json` |
+
+- Detection: `localStorage` → `navigator.language` → `en`
+- Toggle: language button at the bottom of the sidebar (like Phoenix)
+- Setup: `src/i18n/index.ts` — `initI18n()`, `t()`, `setLocale()`
+
 ## Architecture
 
 - **`domain/*`**: pure functions (`convert`, `join`, `build` zip, …) shelling out to local CLIs; tests call these directly.
 - **`lib.rs` commands**: thin Tauri `invoke` wrappers + default temp output dirs.
 - **Frontend (`src/main.ts`)**: multi-tool sidebar, dialog file pick, format options, results list, ZIP batch.
+- **i18n (`src/i18n/`)**: English + Portuguese (BR) UI strings for tools and chrome.
 
 ## License
 

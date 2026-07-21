@@ -198,6 +198,44 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  flex: 1;
+}
+
+.locale-switch {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--slate-200);
+}
+
+.locale-btn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--slate-200);
+  background: var(--white);
+  padding: 0.75rem 1rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--slate-700);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.locale-btn:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--slate-200));
+  background: color-mix(in srgb, var(--accent) 8%, white);
+}
+
+.locale-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--slate-500);
+  flex-shrink: 0;
 }
 
 .nav-card {
