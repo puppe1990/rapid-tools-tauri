@@ -1,11 +1,12 @@
 use super::util::{
-    ensure_output_dir, ensure_sources_exist, find_executable, media_type_for_video,
-    normalize_format, run_command,
+    ensure_output_dir, ensure_sources_exist, ensure_sources_extensions, find_executable,
+    media_type_for_video, normalize_format, run_command,
 };
 use super::ConversionResult;
 use std::path::PathBuf;
 
-pub const SUPPORTED_FORMATS: &[&str] = &["mp4", "mov", "webm", "mkv", "avi"];
+pub const SUPPORTED_FORMATS: &[&str] = &["mp4", "mov", "webm", "mkv", "avi", "3gp"];
+pub const SUPPORTED_INPUTS: &[&str] = &["mp4", "mov", "webm", "mkv", "avi", "3gp"];
 
 pub fn join(
     source_paths: &[String],
@@ -20,6 +21,7 @@ pub fn join(
         return Err(format!("unsupported_target_format: {target_format}"));
     }
     ensure_sources_exist(source_paths)?;
+    ensure_sources_extensions(source_paths, SUPPORTED_INPUTS)?;
     let out_dir = ensure_output_dir(output_dir)?;
     let ffmpeg = find_executable(&["ffmpeg"]).map_err(|_| "ffmpeg_not_found".to_string())?;
 
@@ -156,6 +158,27 @@ fn transcode_args_for_target(target_format: &str) -> Vec<String> {
             "5".into(),
             "-c:a".into(),
             "libmp3lame".into(),
+        ],
+        // 3GP: H.264 baseline + AAC is widely playable (avoids H.263/AMR defaults).
+        "3gp" => vec![
+            "-c:v".into(),
+            "libx264".into(),
+            "-profile:v".into(),
+            "baseline".into(),
+            "-level".into(),
+            "3.0".into(),
+            "-pix_fmt".into(),
+            "yuv420p".into(),
+            "-c:a".into(),
+            "aac".into(),
+            "-ar".into(),
+            "44100".into(),
+            "-ac".into(),
+            "2".into(),
+            "-b:a".into(),
+            "96k".into(),
+            "-f".into(),
+            "3gp".into(),
         ],
         _ => vec![],
     }

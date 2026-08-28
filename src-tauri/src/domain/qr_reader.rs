@@ -1,5 +1,6 @@
-use super::util::{ensure_source_exists, find_executable};
-use std::process::Command;
+use super::util::{ensure_source_exists, ensure_source_extension, find_executable, tool_command};
+
+pub const SUPPORTED_INPUTS: &[&str] = &["png", "jpg", "jpeg", "webp"];
 
 #[allow(dead_code)]
 pub fn available() -> bool {
@@ -8,9 +9,10 @@ pub fn available() -> bool {
 
 pub fn read(source_path: &str) -> Result<String, String> {
     ensure_source_exists(source_path)?;
+    ensure_source_extension(source_path, SUPPORTED_INPUTS)?;
     let zbar = find_executable(&["zbarimg"]).map_err(|_| "zbar_unavailable".to_string())?;
 
-    let output = Command::new(zbar)
+    let output = tool_command(&zbar)
         .args(["-q", "--raw", source_path])
         .output()
         .map_err(|e| format!("zbar_failed: {e}"))?;

@@ -1,10 +1,11 @@
 use super::util::{
-    audio_codec_args, ensure_output_dir, ensure_sources_exist, find_executable,
-    media_type_for_audio, normalize_format, run_command,
+    audio_codec_args, ensure_output_dir, ensure_sources_exist, ensure_sources_extensions,
+    find_executable, media_type_for_audio, normalize_format, run_command,
 };
 use super::ConversionResult;
 
 pub const SUPPORTED_FORMATS: &[&str] = &["mp3", "wav", "ogg", "aac", "flac"];
+pub const SUPPORTED_INPUTS: &[&str] = &["mp3", "wav", "ogg", "aac", "flac"];
 
 pub fn join(
     source_paths: &[String],
@@ -19,6 +20,7 @@ pub fn join(
         return Err(format!("unsupported_target_format: {target_format}"));
     }
     ensure_sources_exist(source_paths)?;
+    ensure_sources_extensions(source_paths, SUPPORTED_INPUTS)?;
     let out_dir = ensure_output_dir(output_dir)?;
     let output_path = out_dir.join(format!("together-audios.{target_format}"));
     let ffmpeg = find_executable(&["ffmpeg"]).map_err(|_| "ffmpeg_not_found".to_string())?;

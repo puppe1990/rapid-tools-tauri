@@ -1,11 +1,12 @@
 use super::util::{
-    ensure_output_dir, ensure_source_exists, find_executable, media_type_for_image,
-    normalize_format, run_command,
+    ensure_output_dir, ensure_source_exists, ensure_source_extension, find_executable,
+    media_type_for_image, normalize_format, run_command,
 };
 use super::ConversionResult;
 use std::path::PathBuf;
 
 pub const SUPPORTED_FORMATS: &[&str] = &["original", "jpg", "png", "webp"];
+pub const SUPPORTED_INPUTS: &[&str] = &["png", "jpg", "jpeg", "webp"];
 pub const SUPPORTED_FITS: &[&str] = &["contain", "cover", "stretch"];
 
 pub fn resize(
@@ -28,6 +29,7 @@ pub fn resize(
         return Err(format!("unsupported_fit: {fit}"));
     }
     ensure_source_exists(source_path)?;
+    ensure_source_extension(source_path, SUPPORTED_INPUTS)?;
     let out_dir = ensure_output_dir(output_dir)?;
     let actual_format = output_format(source_path, &target_format);
     let output_path: PathBuf = out_dir.join(format!(

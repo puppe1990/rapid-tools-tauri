@@ -1,11 +1,11 @@
 use super::util::{
-    ensure_output_dir, ensure_source_exists, find_executable, media_type_for_video,
-    normalize_format, output_path_for, run_command,
+    ensure_output_dir, ensure_source_exists, ensure_source_extension, find_executable,
+    media_type_for_video, normalize_format, output_path_for, run_command, tool_command,
 };
 use super::ConversionResult;
-use std::process::Command;
 
-pub const SUPPORTED_FORMATS: &[&str] = &["mp4", "mov", "webm", "mkv", "avi"];
+pub const SUPPORTED_FORMATS: &[&str] = &["mp4", "mov", "webm", "mkv", "avi", "3gp"];
+pub const SUPPORTED_INPUTS: &[&str] = &["mp4", "mov", "webm", "mkv", "avi", "3gp"];
 pub const SUPPORTED_ORIENTATIONS: &[&str] = &["original", "landscape", "portrait", "square"];
 
 pub fn convert(
@@ -23,6 +23,7 @@ pub fn convert(
         return Err(format!("unsupported_orientation: {orientation}"));
     }
     ensure_source_exists(source_path)?;
+    ensure_source_extension(source_path, SUPPORTED_INPUTS)?;
     ensure_has_video_stream(source_path)?;
 
     let out_dir = ensure_output_dir(output_dir)?;
@@ -43,6 +44,7 @@ pub fn convert(
 
     // Container-aware encoding: WebM rejects H.264/AAC stream defaults in some builds;
     // movflags +faststart only applies to MP4/MOV family.
+    // 3GP needs explicit H.264 baseline + AAC (ffmpeg defaults to H.263/AMR).
     match target_format.as_str() {
         "webm" => {
             args.extend([
@@ -58,6 +60,28 @@ pub fn convert(
         }
         "mp4" | "mov" => {
             args.extend(["-movflags".into(), "+faststart".into()]);
+        }
+        "3gp" => {
+            args.extend([
+                "-c:v".into(),
+                "libx264".into(),
+                "-profile:v".into(),
+                "baseline".into(),
+                "-level".into(),
+                "3.0".into(),
+                "-pix_fmt".into(),
+                "yuv420p".into(),
+                "-c:a".into(),
+                "aac".into(),
+                "-ar".into(),
+                "44100".into(),
+                "-ac".into(),
+                "2".into(),
+                "-b:a".into(),
+                "96k".into(),
+                "-f".into(),
+                "3gp".into(),
+            ]);
         }
         _ => {}
     }
@@ -87,7 +111,7 @@ fn ensure_has_video_stream(source_path: &str) -> Result<(), String> {
     let Ok(ffprobe) = find_executable(&["ffprobe"]) else {
         return Ok(());
     };
-    let output = Command::new(ffprobe)
+    let output = tool_command(&ffprobe)
         .args([
             "-v",
             "error",
@@ -199,6 +223,33 @@ mod tests {
     }
 
     #[test]
+    fn converts_mp4_to_3gp() {
+        let dir = TempDir::new().unwrap();
+        let source = make_mp4(&dir, "clip.mp4");
+        let out = dir.path().join("out");
+        std::fs::create_dir_all(&out).unwrap();
+
+        let result = convert(
+            source.to_str().unwrap(),
+            "3gp",
+            out.to_str().unwrap(),
+            Some("original"),
+        )
+        .expect("video convert to 3gp");
+
+        assert!(std::path::Path::new(&result.output_path).is_file());
+        assert!(std::fs::metadata(&result.output_path).unwrap().len() > 0);
+        assert!(
+            result.output_path.ends_with(".3gp"),
+            "expected .3gp, got {}",
+            result.output_path
+        );
+        assert_eq!(result.target_format, "3gp");
+        assert_eq!(result.media_type, "video/3gpp");
+        assert_eq!(result.filename, "clip.3gp");
+    }
+
+    #[test]
     fn rejects_unsupported_format() {
         let dir = TempDir::new().unwrap();
         let source = make_mp4(&dir, "clip.mp4");
@@ -210,5 +261,20 @@ mod tests {
         )
         .unwrap_err();
         assert!(err.contains("unsupported_target_format"));
+    }
+
+    #[test]
+    fn rejects_image_source_before_calling_ffmpeg() {
+        let dir = TempDir::new().unwrap();
+        let source = dir.path().join("photo.png");
+        std::fs::write(&source, b"not-a-video").unwrap();
+        let err = convert(
+            source.to_str().unwrap(),
+            "mp4",
+            dir.path().to_str().unwrap(),
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(err, "unsupported_source_format: png");
     }
 }

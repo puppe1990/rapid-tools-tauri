@@ -55,6 +55,22 @@
     "doneCount": "Done — {{count}} output file(s).",
     "convertedCount": "{{count}} file(s) converted"
   },
+  "errors": {
+    "unsupportedSource": "{{tool}} cannot convert {{ext}} files. Accepted inputs: {{accepted}}. {{suggestion}}",
+    "filesRejected": "{{tool}} skipped {{count}} file(s) it cannot convert ({{names}}). {{suggestion}}",
+    "tryTool": "Use {{tool}} instead.",
+    "acceptedInputs": "Accepted inputs: {{accepted}}.",
+    "ffmpegMissing": "ffmpeg was not found. On macOS install it with Homebrew (brew install ffmpeg) and reopen RapidTools.",
+    "imagemagickMissing": "ImageMagick was not found. On macOS install it with Homebrew (brew install imagemagick) and reopen RapidTools.",
+    "ghostscriptMissing": "PDF conversion needs Ghostscript. On macOS install it with Homebrew (brew install ghostscript) and reopen RapidTools.",
+    "sourceMissing": "The selected file could not be found. Choose the file again.",
+    "pathMissing": "That output file is no longer on disk.",
+    "zbarMissing": "QR reading needs zbar (brew install zbar). Install it and reopen RapidTools.",
+    "noQr": "No QR code was found in this image.",
+    "invalidVideo": "This file does not contain a video track RapidTools can convert.",
+    "invalidAudio": "This file does not contain an audio track RapidTools can convert.",
+    "conversionFailed": "Conversion failed. Check that the file is valid for this tool and try again."
+  },
   "tools": {
     "image": {
       "name": "Image Converter",
@@ -73,7 +89,7 @@
       "description": "Convert videos between MP4, MOV, WEBM, MKV, and AVI with individual or batch downloads.",
       "hint": "Useful for standardizing edit, web, and sharing formats.",
       "badge": "Video workflow",
-      "acceptHelp": "Accepted inputs: MP4, MOV, WEBM, MKV, and AVI.",
+      "acceptHelp": "Accepted inputs: MP4, MOV, WEBM, MKV, AVI, and 3GP.",
       "runLabel": "Convert videos",
       "loadingTitle": "Converting videos",
       "emptyCopy": "Upload several videos, choose the final container, and download each output or a ZIP of the batch."
@@ -95,7 +111,7 @@
       "description": "Compress videos to MP4 with quality presets and resolution caps.",
       "hint": "Ideal for reducing size before upload or publishing.",
       "badge": "Compress workflow",
-      "acceptHelp": "Accepted inputs: MP4, MOV, WEBM, MKV, and AVI.",
+      "acceptHelp": "Accepted inputs: MP4, MOV, WEBM, MKV, AVI, and 3GP.",
       "runLabel": "Compress videos",
       "loadingTitle": "Compressing videos",
       "emptyCopy": "Pick preset and resolution; download the compressed MP4 or the batch ZIP."
@@ -106,7 +122,7 @@
       "description": "Extract the audio track from videos to MP3, WAV, OGG, AAC, or FLAC.",
       "hint": "Fast for podcasts, samples, and offline captioning.",
       "badge": "Extract workflow",
-      "acceptHelp": "Accepted inputs: MP4, MOV, WEBM, MKV, AVI, and TS.",
+      "acceptHelp": "Accepted inputs: MP4, MOV, WEBM, MKV, AVI, 3GP, and TS.",
       "runLabel": "Extract audio",
       "loadingTitle": "Extracting audio",
       "emptyCopy": "Upload videos and download each extracted audio or the batch ZIP."
@@ -161,7 +177,7 @@
       "description": "Join two or more videos into a single output file.",
       "hint": "Local concatenation with ffmpeg.",
       "badge": "Join video",
-      "acceptHelp": "Select at least 2 videos (MP4, MOV, WEBM, MKV, AVI).",
+      "acceptHelp": "Select at least 2 videos (MP4, MOV, WEBM, MKV, AVI, 3GP).",
       "runLabel": "Join videos",
       "loadingTitle": "Joining videos",
       "emptyCopy": "Choose the final container and download the unified video."

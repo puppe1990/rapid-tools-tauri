@@ -1,9 +1,11 @@
 use super::util::{
-    ensure_output_dir, ensure_sources_exist, find_executable, normalize_format, run_command,
+    ensure_output_dir, ensure_sources_exist, ensure_sources_extensions, find_executable,
+    normalize_format, run_command,
 };
 use super::ConversionResult;
 
 pub const SUPPORTED_FORMATS: &[&str] = &["mp4", "gif"];
+pub const SUPPORTED_INPUTS: &[&str] = &["png", "jpg", "jpeg", "webp"];
 
 pub fn convert(
     source_paths: &[String],
@@ -24,6 +26,7 @@ pub fn convert(
         interval_secs
     };
     ensure_sources_exist(source_paths)?;
+    ensure_sources_extensions(source_paths, SUPPORTED_INPUTS)?;
     let out_dir = ensure_output_dir(output_dir)?;
     let output_path = out_dir.join(format!("images-to-video.{target_format}"));
     let ffmpeg = find_executable(&["ffmpeg"]).map_err(|_| "ffmpeg_not_found".to_string())?;

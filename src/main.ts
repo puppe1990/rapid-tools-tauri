@@ -39,6 +39,8 @@ type ToolId =
 interface ToolDef {
   id: ToolId;
   formats: string[];
+  /** Source extensions this tool accepts (dialog + drop + backend). */
+  accept: string[];
   multi: boolean;
   /** CSS color for nav dot / card accent (matches Phoenix ToolNavigation) */
   accent: string;
@@ -52,76 +54,92 @@ interface ConversionResult {
 }
 
 /** Tool registry — copy comes from i18n keys tools.<id>.* */
+const IMAGE_INPUTS = ["png", "jpg", "jpeg", "webp", "heic", "avif", "enc"];
+const VIDEO_INPUTS = ["mp4", "mov", "webm", "mkv", "avi", "3gp"];
+const AUDIO_INPUTS = ["mp3", "wav", "ogg", "aac", "flac"];
+
 const TOOLS: ToolDef[] = [
   {
     id: "image",
     formats: ["png", "jpg", "webp", "heic", "avif", "enc"],
+    accept: IMAGE_INPUTS,
     multi: true,
     accent: "#f97316",
   },
   {
     id: "video",
-    formats: ["mp4", "mov", "webm", "mkv", "avi"],
+    formats: ["mp4", "mov", "webm", "mkv", "avi", "3gp"],
+    accept: VIDEO_INPUTS,
     multi: true,
     accent: "#6366f1",
   },
   {
     id: "image_resizer",
     formats: ["original", "jpg", "png", "webp"],
+    accept: ["png", "jpg", "jpeg", "webp"],
     multi: true,
     accent: "#06b6d4",
   },
   {
     id: "video_compressor",
     formats: ["mp4"],
+    accept: VIDEO_INPUTS,
     multi: true,
     accent: "#f43f5e",
   },
   {
     id: "extract_audio",
     formats: ["mp3", "wav", "ogg", "aac", "flac"],
+    accept: [...VIDEO_INPUTS, "ts"],
     multi: true,
     accent: "#d946ef",
   },
   {
     id: "audio",
     formats: ["mp3", "wav", "ogg", "aac", "flac"],
+    accept: AUDIO_INPUTS,
     multi: true,
     accent: "#10b981",
   },
   {
     id: "photos_to_pdf",
     formats: ["pdf"],
+    accept: IMAGE_INPUTS,
     multi: true,
     accent: "#0ea5e9",
   },
   {
     id: "pdf_to_images",
     formats: ["png", "jpg"],
+    accept: ["pdf"],
     multi: false,
     accent: "#8b5cf6",
   },
   {
     id: "together_audios",
     formats: ["mp3", "wav", "ogg", "aac", "flac"],
+    accept: AUDIO_INPUTS,
     multi: true,
     accent: "#f59e0b",
   },
   {
     id: "together_videos",
-    formats: ["mp4", "mov", "webm", "mkv", "avi"],
+    formats: ["mp4", "mov", "webm", "mkv", "avi", "3gp"],
+    accept: VIDEO_INPUTS,
     multi: true,
     accent: "#ec4899",
   },
   {
     id: "images_to_video",
     formats: ["mp4", "gif"],
+    accept: ["png", "jpg", "jpeg", "webp"],
     multi: true,
     accent: "#14b8a6",
   },
   {
     id: "qr_reader",
     formats: ["text"],
+    accept: ["png", "jpg", "jpeg", "webp"],
     multi: false,
     accent: "#84cc16",
   },
@@ -307,6 +325,94 @@ function escapeHtml(s: string): string {
 
 function basename(path: string): string {
   return path.split(/[/\\]/).pop() ?? path;
+}
+
+function fileExtension(path: string): string {
+  const name = basename(path);
+  const dot = name.lastIndexOf(".");
+  if (dot <= 0) return "";
+  return name.slice(dot + 1).toLowerCase();
+}
+
+function canonicalExt(ext: string): string {
+  return ext.toLowerCase() === "jpeg" ? "jpg" : ext.toLowerCase();
+}
+
+function isAcceptedSource(path: string): boolean {
+  const ext = canonicalExt(fileExtension(path));
+  if (!ext) return false;
+  return currentTool.accept.some((allowed) => canonicalExt(allowed) === ext);
+}
+
+function suggestedToolForExt(ext: string): ToolId | null {
+  const e = canonicalExt(ext);
+  if (["mp4", "mov", "webm", "mkv", "avi", "3gp", "ts"].includes(e)) return "video";
+  if (["mp3", "wav", "ogg", "aac", "flac"].includes(e)) return "audio";
+  if (e === "pdf") return "pdf_to_images";
+  if (["png", "jpg", "webp", "heic", "avif", "enc"].includes(e)) return "image";
+  return null;
+}
+
+function acceptedList(): string {
+  return currentTool.accept.map((a) => a.toUpperCase()).join(", ");
+}
+
+function suggestionForExt(ext: string): string {
+  const suggested = suggestedToolForExt(ext);
+  if (suggested && suggested !== currentTool.id) {
+    return t("errors.tryTool", { tool: toolText(suggested, "name") });
+  }
+  return "";
+}
+
+function stringifyInvokeError(error: unknown): string {
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return String(error);
+}
+
+function formatInvokeError(error: unknown): string {
+  const raw = stringifyInvokeError(error);
+  const [code, ...rest] = raw.split(":");
+  const detail = rest.join(":").trim();
+  switch (code.trim()) {
+    case "unsupported_source_format": {
+      const ext = (detail || "unknown").toUpperCase();
+      return t("errors.unsupportedSource", {
+        ext,
+        tool: toolText(currentTool.id, "name"),
+        accepted: acceptedList(),
+        suggestion: suggestionForExt(detail.toLowerCase()),
+      });
+    }
+    case "ffmpeg_not_found":
+      return t("errors.ffmpegMissing");
+    case "imagemagick_not_found":
+      return t("errors.imagemagickMissing");
+    case "ghostscript_not_found":
+      return t("errors.ghostscriptMissing");
+    case "source_file_not_found":
+      return t("errors.sourceMissing");
+    case "path_not_found":
+      return t("errors.pathMissing");
+    case "zbar_unavailable":
+      return t("errors.zbarMissing");
+    case "no_qr_found":
+      return t("errors.noQr");
+    case "no_video_stream":
+    case "invalid_media_file":
+      return t("errors.invalidVideo");
+    case "no_audio_stream":
+      return t("errors.invalidAudio");
+    default:
+      if (/ffmpeg: (command )?not found/i.test(raw)) {
+        return t("errors.ffmpegMissing");
+      }
+      return t("errors.conversionFailed");
+  }
 }
 
 function toolKey(id: ToolId, field: string): string {
@@ -552,7 +658,7 @@ function renderResults() {
       try {
         await invoke("reveal_path", { path: r.output_path });
       } catch (e) {
-        setStatus(String(e), true);
+        setStatus(formatInvokeError(e), true);
       }
     });
     li.appendChild(btn);
@@ -615,6 +721,19 @@ function allowsMultipleFiles(): boolean {
   );
 }
 
+function rejectStatus(rejected: string[]): string {
+  const names = rejected.map(basename).join(", ");
+  const suggestion =
+    suggestionForExt(fileExtension(rejected[0] ?? "")) ||
+    t("errors.acceptedInputs", { accepted: acceptedList() });
+  return t("errors.filesRejected", {
+    count: rejected.length,
+    names,
+    tool: toolText(currentTool.id, "name"),
+    suggestion,
+  });
+}
+
 /** Merge dropped/picked paths into selection (append for multi tools). */
 function addPaths(paths: string[], opts: { replace?: boolean } = {}): void {
   const cleaned = paths
@@ -623,15 +742,23 @@ function addPaths(paths: string[], opts: { replace?: boolean } = {}): void {
 
   if (!cleaned.length) return;
 
+  const accepted = cleaned.filter(isAcceptedSource);
+  const rejected = cleaned.filter((path) => !isAcceptedSource(path));
+
+  if (!accepted.length) {
+    setStatus(rejectStatus(rejected), true);
+    return;
+  }
+
   const replace = opts.replace === true || !allowsMultipleFiles();
   let next: string[];
 
   if (replace) {
-    next = allowsMultipleFiles() ? cleaned : [cleaned[0]];
+    next = allowsMultipleFiles() ? accepted : [accepted[0]];
   } else {
     const seen = new Set(selectedPaths);
     next = [...selectedPaths];
-    for (const path of cleaned) {
+    for (const path of accepted) {
       if (!seen.has(path)) {
         seen.add(path);
         next.push(path);
@@ -644,7 +771,9 @@ function addPaths(paths: string[], opts: { replace?: boolean } = {}): void {
   selectedPaths = next;
   renderFiles();
   updateRunEnabled();
-  if (added > 0) {
+  if (rejected.length) {
+    setStatus(rejectStatus(rejected), true);
+  } else if (added > 0) {
     setStatus(t("common.filesAdded", { count: added }));
   } else {
     setStatus("");
@@ -666,6 +795,12 @@ async function pickFiles() {
   const selected = await open({
     multiple,
     directory: false,
+    filters: [
+      {
+        name: toolText(currentTool.id, "name"),
+        extensions: currentTool.accept,
+      },
+    ],
   });
 
   if (selected === null) return;
@@ -908,7 +1043,7 @@ async function runTool() {
     );
     renderResults();
   } catch (e) {
-    setStatus(String(e), true);
+    setStatus(formatInvokeError(e), true);
     renderResults();
   } finally {
     setLoading(false);
@@ -929,7 +1064,7 @@ async function zipResults() {
     setStatus(t("common.zipReady", { path: zip.path }));
     await invoke("reveal_path", { path: zip.path });
   } catch (e) {
-    setStatus(String(e), true);
+    setStatus(formatInvokeError(e), true);
   }
 }
 

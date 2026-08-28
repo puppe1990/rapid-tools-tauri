@@ -10,19 +10,35 @@ fn default_output_dir(tool: &str) -> String {
     base.to_string_lossy().into_owned()
 }
 
+/// ffmpeg/magick must not run on the UI thread — a wrong file (e.g. MKV in Image
+/// Converter) previously froze the app long enough for macOS to report a hang.
+async fn run_blocking<T, F>(f: F) -> Result<T, String>
+where
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+    T: Send + 'static,
+{
+    tauri::async_runtime::spawn_blocking(f)
+        .await
+        .map_err(|e| format!("worker_join_failed: {e}"))?
+}
+
 #[tauri::command]
 fn list_tools() -> Vec<serde_json::Value> {
     vec![
         json_tool("image", "Image converter", "png,jpg,webp,heic,avif,enc"),
         json_tool("image_resizer", "Image resizer", "jpg,png,webp"),
-        json_tool("video", "Video converter", "mp4,mov,webm,mkv,avi"),
+        json_tool("video", "Video converter", "mp4,mov,webm,mkv,avi,3gp"),
         json_tool("video_compressor", "Video compressor", "mp4"),
         json_tool("extract_audio", "Extract audio", "mp3,wav,ogg,aac,flac"),
         json_tool("audio", "Audio converter", "mp3,wav,ogg,aac,flac"),
         json_tool("photos_to_pdf", "Photos to PDF", "pdf"),
         json_tool("pdf_to_images", "PDF to images", "png,jpg"),
         json_tool("together_audios", "Together audios", "mp3,wav,ogg,aac,flac"),
-        json_tool("together_videos", "Together videos", "mp4,mov,webm,mkv,avi"),
+        json_tool(
+            "together_videos",
+            "Together videos",
+            "mp4,mov,webm,mkv,avi,3gp",
+        ),
         json_tool("images_to_video", "Images to video", "mp4,gif"),
         json_tool("qr_reader", "QR reader", "text"),
     ]
@@ -33,38 +49,41 @@ fn json_tool(id: &str, name: &str, formats: &str) -> serde_json::Value {
 }
 
 #[tauri::command]
-fn convert_image(
+async fn convert_image(
     source_path: String,
     target_format: String,
     output_dir: Option<String>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("image"));
-    domain::image_converter::convert(&source_path, &target_format, &out)
+    run_blocking(move || domain::image_converter::convert(&source_path, &target_format, &out)).await
 }
 
 #[tauri::command]
-fn convert_video(
+async fn convert_video(
     source_path: String,
     target_format: String,
     output_dir: Option<String>,
     orientation: Option<String>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("video"));
-    domain::video_converter::convert(&source_path, &target_format, &out, orientation.as_deref())
+    run_blocking(move || {
+        domain::video_converter::convert(&source_path, &target_format, &out, orientation.as_deref())
+    })
+    .await
 }
 
 #[tauri::command]
-fn convert_audio(
+async fn convert_audio(
     source_path: String,
     target_format: String,
     output_dir: Option<String>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("audio"));
-    domain::audio_converter::convert(&source_path, &target_format, &out)
+    run_blocking(move || domain::audio_converter::convert(&source_path, &target_format, &out)).await
 }
 
 #[tauri::command]
-fn resize_image(
+async fn resize_image(
     source_path: String,
     width: u32,
     height: u32,
@@ -73,28 +92,31 @@ fn resize_image(
     fit: Option<String>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("image_resizer"));
-    domain::image_resizer::resize(
-        &source_path,
-        width,
-        height,
-        &out,
-        target_format.as_deref(),
-        fit.as_deref(),
-    )
+    run_blocking(move || {
+        domain::image_resizer::resize(
+            &source_path,
+            width,
+            height,
+            &out,
+            target_format.as_deref(),
+            fit.as_deref(),
+        )
+    })
+    .await
 }
 
 #[tauri::command]
-fn extract_audio(
+async fn extract_audio(
     source_path: String,
     target_format: String,
     output_dir: Option<String>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("extract_audio"));
-    domain::audio_extractor::extract(&source_path, &target_format, &out)
+    run_blocking(move || domain::audio_extractor::extract(&source_path, &target_format, &out)).await
 }
 
 #[tauri::command]
-fn compress_video(
+async fn compress_video(
     source_path: String,
     output_dir: Option<String>,
     preset: Option<String>,
@@ -102,90 +124,100 @@ fn compress_video(
     mute: Option<bool>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("video_compressor"));
-    domain::video_compressor::compress(
-        &source_path,
-        &out,
-        preset.as_deref(),
-        max_resolution.as_deref(),
-        mute.unwrap_or(false),
-    )
+    run_blocking(move || {
+        domain::video_compressor::compress(
+            &source_path,
+            &out,
+            preset.as_deref(),
+            max_resolution.as_deref(),
+            mute.unwrap_or(false),
+        )
+    })
+    .await
 }
 
 #[tauri::command]
-fn photos_to_pdf(
+async fn photos_to_pdf(
     source_paths: Vec<String>,
     output_dir: Option<String>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("photos_to_pdf"));
-    domain::pdf_converter::images_to_pdf(&source_paths, &out)
+    run_blocking(move || domain::pdf_converter::images_to_pdf(&source_paths, &out)).await
 }
 
 #[tauri::command]
-fn pdf_to_images(
+async fn pdf_to_images(
     source_path: String,
     target_format: String,
     output_dir: Option<String>,
 ) -> Result<Vec<ConversionResult>, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("pdf_to_images"));
-    domain::pdf_converter::pdf_to_images(&source_path, &target_format, &out)
+    run_blocking(move || domain::pdf_converter::pdf_to_images(&source_path, &target_format, &out))
+        .await
 }
 
 #[tauri::command]
-fn join_audios(
+async fn join_audios(
     source_paths: Vec<String>,
     target_format: String,
     output_dir: Option<String>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("together_audios"));
-    domain::audio_joiner::join(&source_paths, &target_format, &out)
+    run_blocking(move || domain::audio_joiner::join(&source_paths, &target_format, &out)).await
 }
 
 #[tauri::command]
-fn join_videos(
+async fn join_videos(
     source_paths: Vec<String>,
     target_format: String,
     output_dir: Option<String>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("together_videos"));
-    domain::video_joiner::join(&source_paths, &target_format, &out)
+    run_blocking(move || domain::video_joiner::join(&source_paths, &target_format, &out)).await
 }
 
 #[tauri::command]
-fn images_to_video(
+async fn images_to_video(
     source_paths: Vec<String>,
     target_format: String,
     output_dir: Option<String>,
     interval_secs: Option<f64>,
 ) -> Result<ConversionResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("images_to_video"));
-    domain::images_to_video::convert(
-        &source_paths,
-        &target_format,
-        &out,
-        interval_secs.unwrap_or(2.0),
-    )
+    run_blocking(move || {
+        domain::images_to_video::convert(
+            &source_paths,
+            &target_format,
+            &out,
+            interval_secs.unwrap_or(2.0),
+        )
+    })
+    .await
 }
 
 #[tauri::command]
-fn read_qr(source_path: String) -> Result<String, String> {
-    domain::qr_reader::read(&source_path)
+async fn read_qr(source_path: String) -> Result<String, String> {
+    run_blocking(move || domain::qr_reader::read(&source_path)).await
 }
 
 #[tauri::command]
-fn build_zip(
+async fn build_zip(
     id: String,
     entries: Vec<ZipEntryDto>,
     output_dir: Option<String>,
 ) -> Result<ZipResult, String> {
     let out = output_dir.unwrap_or_else(|| default_output_dir("zips"));
-    let mapped: Vec<ZipEntry> = entries
-        .into_iter()
-        .map(|e| ZipEntry {
-            path: e.path,
-            filename: e.filename,
-        })
-        .collect();
-    domain::zip_archive::build(&id, &mapped, &out)
+    run_blocking(move || {
+        let mapped: Vec<ZipEntry> = entries
+            .into_iter()
+            .map(|e| ZipEntry {
+                path: e.path,
+                filename: e.filename,
+            })
+            .collect();
+        domain::zip_archive::build(&id, &mapped, &out)
+    })
+    .await
 }
 
 #[derive(serde::Deserialize)]

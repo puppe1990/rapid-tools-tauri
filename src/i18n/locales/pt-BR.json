@@ -55,6 +55,22 @@
     "doneCount": "Pronto — {{count}} arquivo(s) de saída.",
     "convertedCount": "{{count}} arquivo(s) convertido(s)"
   },
+  "errors": {
+    "unsupportedSource": "{{tool}} não converte arquivos {{ext}}. Entradas aceitas: {{accepted}}. {{suggestion}}",
+    "filesRejected": "{{tool}} ignorou {{count}} arquivo(s) que não pode converter ({{names}}). {{suggestion}}",
+    "tryTool": "Use {{tool}}.",
+    "acceptedInputs": "Entradas aceitas: {{accepted}}.",
+    "ffmpegMissing": "O ffmpeg não foi encontrado. No macOS, instale com Homebrew (brew install ffmpeg) e reabra o RapidTools.",
+    "imagemagickMissing": "O ImageMagick não foi encontrado. No macOS, instale com Homebrew (brew install imagemagick) e reabra o RapidTools.",
+    "ghostscriptMissing": "A conversão de PDF precisa do Ghostscript. No macOS, instale com Homebrew (brew install ghostscript) e reabra o RapidTools.",
+    "sourceMissing": "O arquivo selecionado não foi encontrado. Escolha o arquivo de novo.",
+    "pathMissing": "Esse arquivo de saída não está mais no disco.",
+    "zbarMissing": "A leitura de QR precisa do zbar (brew install zbar). Instale e reabra o RapidTools.",
+    "noQr": "Nenhum QR code foi encontrado nesta imagem.",
+    "invalidVideo": "Este arquivo não tem uma faixa de vídeo que o RapidTools consiga converter.",
+    "invalidAudio": "Este arquivo não tem uma faixa de áudio que o RapidTools consiga converter.",
+    "conversionFailed": "A conversão falhou. Confira se o arquivo é válido para esta ferramenta e tente de novo."
+  },
   "tools": {
     "image": {
       "name": "Conversor de imagens",
@@ -73,7 +89,7 @@
       "description": "Converta vídeos entre MP4, MOV, WEBM, MKV e AVI com downloads individuais ou em lote.",
       "hint": "Útil para padronizar formatos de edição, web e compartilhamento.",
       "badge": "Fluxo de vídeo",
-      "acceptHelp": "Entradas aceitas: MP4, MOV, WEBM, MKV e AVI.",
+      "acceptHelp": "Entradas aceitas: MP4, MOV, WEBM, MKV, AVI e 3GP.",
       "runLabel": "Converter vídeos",
       "loadingTitle": "Convertendo vídeos",
       "emptyCopy": "Envie vários vídeos, escolha o container final e baixe cada saída ou um ZIP com o lote."
@@ -95,7 +111,7 @@
       "description": "Comprima vídeos para MP4 com presets de qualidade e limite de resolução.",
       "hint": "Ideal para reduzir peso antes de enviar ou publicar.",
       "badge": "Fluxo de compressão",
-      "acceptHelp": "Entradas aceitas: MP4, MOV, WEBM, MKV e AVI.",
+      "acceptHelp": "Entradas aceitas: MP4, MOV, WEBM, MKV, AVI e 3GP.",
       "runLabel": "Comprimir vídeos",
       "loadingTitle": "Comprimindo vídeos",
       "emptyCopy": "Escolha preset e resolução; baixe o MP4 comprimido ou o ZIP do lote."
@@ -106,7 +122,7 @@
       "description": "Extraia a faixa de áudio de vídeos para MP3, WAV, OGG, AAC ou FLAC.",
       "hint": "Rápido para podcasts, samples e legendagem offline.",
       "badge": "Fluxo de extração",
-      "acceptHelp": "Entradas aceitas: MP4, MOV, WEBM, MKV, AVI e TS.",
+      "acceptHelp": "Entradas aceitas: MP4, MOV, WEBM, MKV, AVI, 3GP e TS.",
       "runLabel": "Extrair áudio",
       "loadingTitle": "Extraindo áudio",
       "emptyCopy": "Envie vídeos e baixe cada áudio extraído ou o ZIP do lote."
@@ -161,7 +177,7 @@
       "description": "Una dois ou mais vídeos em um único arquivo de saída.",
       "hint": "Concatenação local com ffmpeg.",
       "badge": "Juntar vídeo",
-      "acceptHelp": "Selecione pelo menos 2 vídeos (MP4, MOV, WEBM, MKV, AVI).",
+      "acceptHelp": "Selecione pelo menos 2 vídeos (MP4, MOV, WEBM, MKV, AVI, 3GP).",
       "runLabel": "Juntar vídeos",
       "loadingTitle": "Juntando vídeos",
       "emptyCopy": "Escolha o container final e baixe o vídeo unificado."
