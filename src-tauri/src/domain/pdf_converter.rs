@@ -1,8 +1,12 @@
 use super::util::{
-    ensure_output_dir, ensure_source_exists, ensure_sources_exist, find_executable, run_command,
+    ensure_output_dir, ensure_source_exists, ensure_source_extension, ensure_sources_exist,
+    ensure_sources_extensions, find_executable, run_command,
 };
 use super::ConversionResult;
 use std::path::PathBuf;
+
+pub const SUPPORTED_IMAGE_INPUTS: &[&str] = &["png", "jpg", "jpeg", "webp", "heic", "avif", "enc"];
+pub const SUPPORTED_PDF_INPUTS: &[&str] = &["pdf"];
 
 pub fn images_to_pdf(
     source_paths: &[String],
@@ -12,6 +16,7 @@ pub fn images_to_pdf(
         return Err("source_files_not_found".into());
     }
     ensure_sources_exist(source_paths)?;
+    ensure_sources_extensions(source_paths, SUPPORTED_IMAGE_INPUTS)?;
     let out_dir = ensure_output_dir(output_dir)?;
     let output_path = out_dir.join("photos.pdf");
     let magick =
@@ -47,6 +52,7 @@ pub fn pdf_to_images(
         return Err(format!("unsupported_target_format: {target_format}"));
     }
     ensure_source_exists(source_path)?;
+    ensure_source_extension(source_path, SUPPORTED_PDF_INPUTS)?;
     let out_dir = ensure_output_dir(output_dir)?;
     let magick =
         find_executable(&["magick", "convert"]).map_err(|_| "imagemagick_not_found".to_string())?;
@@ -124,8 +130,14 @@ mod tests {
 
         let pages_dir = dir.path().join("pages");
         std::fs::create_dir_all(&pages_dir).unwrap();
-        let pages = pdf_to_images(&pdf.output_path, "png", pages_dir.to_str().unwrap())
-            .expect("pdf to images");
+        let pages = match pdf_to_images(&pdf.output_path, "png", pages_dir.to_str().unwrap()) {
+            Ok(pages) => pages,
+            Err(err) if err == "ghostscript_not_found" => {
+                eprintln!("skipping pdf rasterization: ghostscript (gs) not installed");
+                return;
+            }
+            Err(err) => panic!("pdf to images: {err:?}"),
+        };
         assert!(!pages.is_empty());
         for page in &pages {
             assert!(std::path::Path::new(&page.output_path).is_file());

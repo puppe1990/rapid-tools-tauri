@@ -1,11 +1,12 @@
 use super::util::{
-    audio_codec_args, ensure_output_dir, ensure_source_exists, find_executable,
-    media_type_for_audio, normalize_format, output_path_for, run_command,
+    audio_codec_args, ensure_output_dir, ensure_source_exists, ensure_source_extension,
+    find_executable, media_type_for_audio, normalize_format, output_path_for, run_command,
+    tool_command,
 };
 use super::ConversionResult;
-use std::process::Command;
 
 pub const SUPPORTED_FORMATS: &[&str] = &["mp3", "wav", "ogg", "aac", "flac"];
+pub const SUPPORTED_INPUTS: &[&str] = &["mp4", "mov", "webm", "mkv", "avi", "ts", "3gp"];
 
 pub fn extract(
     source_path: &str,
@@ -17,6 +18,7 @@ pub fn extract(
         return Err(format!("unsupported_target_format: {target_format}"));
     }
     ensure_source_exists(source_path)?;
+    ensure_source_extension(source_path, SUPPORTED_INPUTS)?;
     ensure_has_audio_stream(source_path)?;
 
     let out_dir = ensure_output_dir(output_dir)?;
@@ -49,7 +51,7 @@ fn ensure_has_audio_stream(source_path: &str) -> Result<(), String> {
     let Ok(ffprobe) = find_executable(&["ffprobe"]) else {
         return Ok(());
     };
-    let output = Command::new(ffprobe)
+    let output = tool_command(&ffprobe)
         .args([
             "-v",
             "error",

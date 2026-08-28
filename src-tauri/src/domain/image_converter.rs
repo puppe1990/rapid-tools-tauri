@@ -1,10 +1,11 @@
 use super::util::{
-    ensure_output_dir, ensure_source_exists, find_executable, media_type_for_image,
-    normalize_format, output_path_for, run_command,
+    ensure_output_dir, ensure_source_exists, ensure_source_extension, find_executable,
+    media_type_for_image, normalize_format, output_path_for, run_command,
 };
 use super::ConversionResult;
 
 pub const SUPPORTED_FORMATS: &[&str] = &["png", "jpg", "webp", "heic", "avif", "enc"];
+pub const SUPPORTED_INPUTS: &[&str] = &["png", "jpg", "jpeg", "webp", "heic", "avif", "enc"];
 
 pub fn convert(
     source_path: &str,
@@ -16,6 +17,7 @@ pub fn convert(
         return Err(format!("unsupported_target_format: {target_format}"));
     }
     ensure_source_exists(source_path)?;
+    ensure_source_extension(source_path, SUPPORTED_INPUTS)?;
     let out_dir = ensure_output_dir(output_dir)?;
     let output_path = output_path_for(source_path, &out_dir, &target_format);
 
@@ -113,5 +115,21 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let err = convert("/no/such/file.png", "jpg", dir.path().to_str().unwrap()).unwrap_err();
         assert_eq!(err, "source_file_not_found");
+    }
+
+    #[test]
+    fn rejects_video_source_before_calling_magick() {
+        let dir = TempDir::new().unwrap();
+        let source = dir.path().join("clip.mkv");
+        std::fs::write(&source, b"not-an-image").unwrap();
+
+        let err = convert(
+            source.to_str().unwrap(),
+            "png",
+            dir.path().to_str().unwrap(),
+        )
+        .unwrap_err();
+
+        assert_eq!(err, "unsupported_source_format: mkv");
     }
 }

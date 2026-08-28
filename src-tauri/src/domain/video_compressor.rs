@@ -1,11 +1,13 @@
 use super::util::{
-    ensure_output_dir, ensure_source_exists, find_executable, normalize_format, run_command,
+    ensure_output_dir, ensure_source_exists, ensure_source_extension, find_executable,
+    normalize_format, run_command,
 };
 use super::ConversionResult;
 use std::path::PathBuf;
 
 pub const SUPPORTED_PRESETS: &[&str] = &["small", "balanced", "high"];
 pub const SUPPORTED_RESOLUTIONS: &[&str] = &["original", "1080", "720", "480"];
+pub const SUPPORTED_INPUTS: &[&str] = &["mp4", "mov", "webm", "mkv", "avi", "3gp"];
 
 pub fn compress(
     source_path: &str,
@@ -23,6 +25,7 @@ pub fn compress(
         return Err(format!("unsupported_resolution: {max_resolution}"));
     }
     ensure_source_exists(source_path)?;
+    ensure_source_extension(source_path, SUPPORTED_INPUTS)?;
     let out_dir = ensure_output_dir(output_dir)?;
     let stem = std::path::Path::new(source_path)
         .file_stem()
