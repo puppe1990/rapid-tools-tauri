@@ -129,11 +129,11 @@
     },
     "audio": {
       "name": "Conversor de áudio",
-      "blurb": "Converta MP3, WAV, OGG, AAC e FLAC",
-      "description": "Converta áudios entre MP3, WAV, OGG, AAC e FLAC com downloads individuais ou em lote.",
+      "blurb": "Converta MP3, WAV, OGG, AAC, M4A e FLAC",
+      "description": "Converta áudios entre MP3, WAV, OGG, AAC, M4A e FLAC com downloads individuais ou em lote.",
       "hint": "Padronize bibliotecas de som e assets de produto.",
       "badge": "Fluxo de áudio",
-      "acceptHelp": "Entradas aceitas: MP3, WAV, OGG, AAC e FLAC.",
+      "acceptHelp": "Entradas aceitas: MP3, WAV, OGG, AAC, M4A e FLAC.",
       "runLabel": "Converter áudios",
       "loadingTitle": "Convertendo áudios",
       "emptyCopy": "Envie vários áudios, escolha o formato final e baixe cada arquivo ou o ZIP."

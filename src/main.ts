@@ -57,6 +57,8 @@ interface ConversionResult {
 const IMAGE_INPUTS = ["png", "jpg", "jpeg", "webp", "heic", "avif", "enc"];
 const VIDEO_INPUTS = ["mp4", "mov", "webm", "mkv", "avi", "3gp"];
 const AUDIO_INPUTS = ["mp3", "wav", "ogg", "aac", "flac"];
+/** Audio Converter additionally accepts M4A (AAC in MP4 container). */
+const AUDIO_CONVERTER_INPUTS = [...AUDIO_INPUTS, "m4a"];
 
 const TOOLS: ToolDef[] = [
   {
@@ -97,7 +99,7 @@ const TOOLS: ToolDef[] = [
   {
     id: "audio",
     formats: ["mp3", "wav", "ogg", "aac", "flac"],
-    accept: AUDIO_INPUTS,
+    accept: AUDIO_CONVERTER_INPUTS,
     multi: true,
     accent: "#10b981",
   },
@@ -347,7 +349,7 @@ function isAcceptedSource(path: string): boolean {
 function suggestedToolForExt(ext: string): ToolId | null {
   const e = canonicalExt(ext);
   if (["mp4", "mov", "webm", "mkv", "avi", "3gp", "ts"].includes(e)) return "video";
-  if (["mp3", "wav", "ogg", "aac", "flac"].includes(e)) return "audio";
+  if (["mp3", "wav", "ogg", "aac", "flac", "m4a"].includes(e)) return "audio";
   if (e === "pdf") return "pdf_to_images";
   if (["png", "jpg", "webp", "heic", "avif", "enc"].includes(e)) return "image";
   return null;

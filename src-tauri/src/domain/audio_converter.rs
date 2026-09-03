@@ -5,7 +5,7 @@ use super::util::{
 use super::ConversionResult;
 
 pub const SUPPORTED_FORMATS: &[&str] = &["mp3", "wav", "ogg", "aac", "flac"];
-pub const SUPPORTED_INPUTS: &[&str] = &["mp3", "wav", "ogg", "aac", "flac"];
+pub const SUPPORTED_INPUTS: &[&str] = &["mp3", "wav", "ogg", "aac", "flac", "m4a"];
 
 pub fn convert(
     source_path: &str,
@@ -54,8 +54,33 @@ pub fn supported_formats() -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::util::test_fixtures::make_wav;
+    use crate::domain::util::{
+        run_command,
+        test_fixtures::{make_wav, require_ffmpeg},
+    };
     use tempfile::TempDir;
+
+    /// Encode a real M4A (AAC in an MP4 container) via ffmpeg.
+    fn make_m4a(dir: &TempDir, name: &str) -> std::path::PathBuf {
+        let ffmpeg = require_ffmpeg();
+        let path = dir.path().join(name);
+        run_command(
+            &ffmpeg,
+            &[
+                "-y".into(),
+                "-f".into(),
+                "lavfi".into(),
+                "-i".into(),
+                "sine=frequency=440:duration=0.3".into(),
+                "-c:a".into(),
+                "aac".into(),
+                path.to_string_lossy().into(),
+            ],
+        )
+        .expect("create m4a fixture");
+        assert!(path.is_file());
+        path
+    }
 
     #[test]
     fn converts_wav_to_mp3_with_real_ffmpeg() {
@@ -84,6 +109,23 @@ mod tests {
             convert(source.to_str().unwrap(), "flac", out.to_str().unwrap()).expect("flac convert");
         assert!(result.output_path.ends_with(".flac"));
         assert!(std::fs::metadata(&result.output_path).unwrap().len() > 0);
+    }
+
+    #[test]
+    fn converts_m4a_to_wav() {
+        let dir = TempDir::new().unwrap();
+        let source = make_m4a(&dir, "voice.m4a");
+        let out = dir.path().join("out");
+        std::fs::create_dir_all(&out).unwrap();
+
+        let result =
+            convert(source.to_str().unwrap(), "wav", out.to_str().unwrap()).expect("m4a convert");
+
+        assert!(std::path::Path::new(&result.output_path).is_file());
+        assert!(std::fs::metadata(&result.output_path).unwrap().len() > 0);
+        assert!(result.output_path.ends_with(".wav"));
+        assert_eq!(result.target_format, "wav");
+        assert_eq!(result.media_type, "audio/wav");
     }
 
     #[test]
