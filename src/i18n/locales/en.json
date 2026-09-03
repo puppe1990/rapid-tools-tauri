@@ -129,11 +129,11 @@
     },
     "audio": {
       "name": "Audio Converter",
-      "blurb": "Convert MP3, WAV, OGG, AAC and FLAC",
-      "description": "Convert audio between MP3, WAV, OGG, AAC, and FLAC with individual or batch downloads.",
+      "blurb": "Convert MP3, WAV, OGG, AAC, M4A and FLAC",
+      "description": "Convert audio between MP3, WAV, OGG, AAC, M4A, and FLAC with individual or batch downloads.",
       "hint": "Standardize sound libraries and product assets.",
       "badge": "Audio workflow",
-      "acceptHelp": "Accepted inputs: MP3, WAV, OGG, AAC, and FLAC.",
+      "acceptHelp": "Accepted inputs: MP3, WAV, OGG, AAC, M4A, and FLAC.",
       "runLabel": "Convert audio",
       "loadingTitle": "Converting audio",
       "emptyCopy": "Upload several audio files, choose the final format, and download each file or the ZIP."
